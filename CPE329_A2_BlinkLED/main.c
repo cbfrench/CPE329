@@ -31,34 +31,34 @@ void delay_uS(int delay)
 {
     long i;
 
-    int multiplier_1_5_MHz = 1; //0.008 ideal
-    int multiplier_3_MHz   = 8;
-    int multiplier_6_MHz   = 606;
-    int multiplier_12_MHz  = 1212;
-    int multiplier_24_MHz  = 2424;
-    int multiplier_48_MHz  = 4412;
+    int multiplier_1_5_MHz = (delay > 1000) ? 2 : 1; //0.008 ideal
+    int multiplier_3_MHz   = (delay > 1000) ? 4 : 3;//8;
+    int multiplier_6_MHz   = 7;//606;
+    int multiplier_12_MHz  = 1;//1212;
+    int multiplier_24_MHz  = 1;//2424;
+    int multiplier_48_MHz  = 1;//4412;
 
     long delayLoopIterator;
 
     switch((CS -> CTL0)&CS_CTL0_DCORSEL_MASK)
     {
         case FREQ_48_MHz:
-            delayLoopIterator = multiplier_48_MHz*((long)delay);    // 48 MHz
+            delayLoopIterator = (((long)delay/10)*multiplier_48_MHz);    // 48 MHz
             break;
         case FREQ_24_MHz:
-            delayLoopIterator = multiplier_24_MHz*((long)delay);    // 24 MHz
+            delayLoopIterator = (((long)delay/10)*multiplier_24_MHz);    // 24 MHz
             break;
         case FREQ_12_MHz:
-            delayLoopIterator = multiplier_12_MHz*((long)delay);    // 12 MHz
+            delayLoopIterator = (((long)delay/10)*multiplier_12_MHz);    // 12 MHz
             break;
         case FREQ_6_MHz:
-            delayLoopIterator = multiplier_6_MHz*((long)delay);     // 6 MHz
+            delayLoopIterator = (((long)delay/10)*multiplier_6_MHz);    // 6 MHz
             break;
         case FREQ_3_MHz:
-            delayLoopIterator = (((long)delay)/multiplier_3_MHz)-1; // 3 MHz
+            delayLoopIterator = (((long)delay/10)*multiplier_3_MHz); // 3 MHz
             break;
         default:
-            delayLoopIterator = (((long)delay)/multiplier_1_5_MHz); // 1.5 MHz or all Others
+            delayLoopIterator = (((long)delay/10)*multiplier_1_5_MHz); // 1.5 MHz or all Others
             break;
     }
 
@@ -85,11 +85,11 @@ void main(void)
     P4 -> SEL1 &= BIT1;                                 // Set as GPIO
     P4 -> SEL0 &= BIT1;
 
-    set_DCO(FREQ_3_MHz);
+    set_DCO(FREQ_6_MHz);
 
 	while(1)
 	{
-	    delay_uS(200);
+	    delay_uS(10000);
 
         P4 -> OUT ^= BIT1;
 	}
