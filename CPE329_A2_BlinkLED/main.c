@@ -31,12 +31,12 @@ void delay_uS(int delay)
 {
     long i;
 
-    int multiplier_1_5_MHz = (delay > 1000) ? 2 : 1; //0.008 ideal
-    int multiplier_3_MHz   = (delay > 1000) ? 4 : 3;//8;
-    int multiplier_6_MHz   = 7;//606;
-    int multiplier_12_MHz  = 1;//1212;
-    int multiplier_24_MHz  = 1;//2424;
-    int multiplier_48_MHz  = 1;//4412;
+    int multiplier_1_5_MHz = (delay > 1000) ? 2 : 1;
+    int multiplier_3_MHz   = (delay > 1000) ? 4 : 3;
+    int multiplier_6_MHz   = (delay > 1000) ? 7 : 6;
+    int multiplier_12_MHz  = (delay > 1000) ? 13 : 12;
+    int multiplier_24_MHz  = (delay > 1000) ? 25 : 24;
+    int multiplier_48_MHz  = (delay > 1000) ? 45 : 44;
 
     long delayLoopIterator;
 
@@ -85,11 +85,11 @@ void main(void)
     P4 -> SEL1 &= BIT1;                                 // Set as GPIO
     P4 -> SEL0 &= BIT1;
 
-    set_DCO(FREQ_6_MHz);
+    set_DCO(FREQ_48_MHz);
 
 	while(1)
 	{
-	    delay_uS(10000);
+	    delay_uS(0);
 
         P4 -> OUT ^= BIT1;
 	}
