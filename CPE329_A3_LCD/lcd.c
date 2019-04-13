@@ -121,7 +121,7 @@ void initLCD()
     delay_us(40);
 }
 
-void writeChar(char character)
+void Write_char_LCD(char character)
 {
     uint8_t upperBits = 0xF0 & character;
     uint8_t lowerBits = 0X0F & character;
@@ -153,7 +153,7 @@ void writeString(char* string)
     {
         if(string[i] == '\n' || i > 16) changeLine();
 
-        writeChar(string[i]);
+        Write_char_LCD(string[i]);
     }
 }
 
@@ -181,7 +181,7 @@ void changeLine()
     else
     {
         LCD_Control -> OUT &= ~(RS | RW | E);    // Set RW and E Low
-        LCD_Data -> OUT = 0x00;                  // Write Upper Bits (Zeros)
+        LCD_Data -> OUT = 0x80;                  // Write Upper Bits (First Row)
 
         LCD_Control -> OUT |= E;                 // Pulse E
         delay_us(1500);
@@ -199,7 +199,45 @@ void changeLine()
     lineChanged = ~lineChanged;
 }
 
+void Clear_LCD()
+{
+    // ****************************************************
+    // Display Clear
 
+    LCD_Control -> OUT &= ~(RS | RW);   // Set RS and RW Low
+    LCD_Control -> OUT &= ~E;           // Set E Low
+    LCD_Data -> OUT = 0x00;             // Write 0000 0000 (Display Clear Upper Bits)
+
+    LCD_Control -> OUT |= E;            // Pulse E
+    delay_us(1500);
+    LCD_Control -> OUT &= ~E;
+
+    LCD_Data -> OUT = 0x10;             // Write 0001 0000 (Display Clear Lower Bits)
+
+    LCD_Control -> OUT |= E;            // Pulse E
+    delay_us(1500);
+    LCD_Control -> OUT &= ~E;
+
+    delay_us(1500);
+}
+
+void Home_LCD()
+{
+    LCD_Control -> OUT &= ~(RS | RW | E);    // Set RW and E Low
+    LCD_Data -> OUT = 0x80;                  // Write Upper Bits (First Row)
+
+    LCD_Control -> OUT |= E;                 // Pulse E
+    delay_us(1500);
+    LCD_Control -> OUT &= ~E;
+    delay_us(1500);
+
+    LCD_Data -> OUT = 0x00;                  // Write Lower Bits (Zeros)
+
+    LCD_Control -> OUT |= E;                 // Pulse E
+    delay_us(1500);
+    LCD_Control -> OUT &= ~E;
+    delay_us(1500);
+}
 
 
 

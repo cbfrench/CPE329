@@ -22,6 +22,8 @@ void main(void)
 	initLCD();
 	//writeChar('A');
 	writeString("Hello");
+	Clear_LCD();
 	changeLine();
 	writeString("World");
+	Home_LCD();
 }

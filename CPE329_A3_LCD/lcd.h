@@ -21,8 +21,10 @@
 #define LCD_Data P4
 
 void initLCD();
-void writeChar(char character);
+void Write_char_LCD(char character);
 void writeString(char* string);
 void changeLine();
+void Clear_LCD();
+void Home_LCD();
 
 #endif /* LCD_H_ */
