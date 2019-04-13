@@ -17,13 +17,11 @@ void main(void)
 	P3 -> SEL1 &= ~(RS | RW | E);
 	P3 -> DIR |= RS | RW | E;                       // Set-Up as Outputs
 
-	set_DCO(FREQ_48_MHz);
+	set_DCO(FREQ_24_MHz);
 
-	initLCD();
-	//writeChar('A');
-	writeString("Hello");
-	Clear_LCD();
-	changeLine();
-	writeString("World");
-	Home_LCD();
+	init_LCD();
+	write_string("Hello World");
+	change_line();
+	write_string("Assignment 3");
+	home_LCD();
 }
