@@ -9,23 +9,8 @@
 #define LCD_H_
 
 void initLCD();
-
-void functionSet(char input);
-
-void displayOn();
-
-void clearLCD();
-
-void setEntryMode();
-
-void homeLCD();
-
-void writeLCD(char input);
-
 void writeStringLCD(char *input);
-
 void changeLine();
-
-
+void homeLCD();
 
 #endif /* LCD_H_ */

@@ -5,6 +5,7 @@
  *      Author: conno
  */
 #include <string.h>
+#include <stdint.h>
 #include "msp.h"
 #include "delay.h"
 
@@ -13,108 +14,109 @@
 #define RS BIT5
 #define RW BIT6
 #define E BIT7
+#define INITIAL_COMMAND 0x33
+#define FUNCTION_SET 0x28
+#define DISPLAY_ON 0x0F
 #define DISPLAY_CLEAR 0x01
-#define NORMAL_ENTRY_MODE 0x06
-#define DISPLAY_ON 0x0C
-#define CURSOR_ON 0x0A
-#define CURSOR_BLINK 0x09
+#define ENTRY_MODE 0x06
+#define SET_LINE 0x80
+#define RETURN_HOME 0x02
+#define LINE_1 0x00
+#define LINE_2 0x40
 
-void initLCD();
-void functionSet(char input);
+void write_data(uint8_t data, int delay_time);
+void write_char(uint8_t c);
+void output(uint8_t data);
+void writeStringLCD(char *s);
+void initialFunctionSet();
+void functionSet();
 void displayOn();
 void clearLCD();
-void setEntryMode();
-void homeLCD();
-void writeLCD(char input);
-void writeStringLCD(char *input);
-void sendByte(char byte);
+void entryMode();
+void initLCD();
+void changeLine(uint8_t lineNumber);
+void toggleE();
 
-void initLCD(){
-    delay_us(40000);
-    LCD_CONTROL->OUT &= ~E;
-    LCD_CONTROL->OUT &= ~(RS|RW);
-    LCD_DATA->OUT = 0x30;
-    LCD_CONTROL->OUT |= E;
-    delay_us(0);
-    LCD_CONTROL->OUT &= ~E;
-    delay_us(40);
-    functionSet(0x28);
-    functionSet(0x28);
-    displayOn();
-    clearLCD();
-    setEntryMode();
-    homeLCD();
-}
-
-void functionSet(char input){
-    LCD_CONTROL->OUT &= ~E;
-    LCD_CONTROL->OUT &= ~(RS|RW);
-    sendByte(input);
-}
-
-void displayOn(){
+void write_data(uint8_t data, int delay_time){
     LCD_CONTROL->OUT &= ~(RS|RW);
     LCD_CONTROL->OUT &= ~E;
-    sendByte(DISPLAY_ON | CURSOR_ON | CURSOR_BLINK);
+    output(data);
+    delay_us(delay_time);
 }
 
-void clearLCD(){
-    LCD_CONTROL->OUT &= ~(RS|RW);
-    LCD_CONTROL->OUT &= ~E;
-    sendByte(DISPLAY_CLEAR);
-    delay_us(1600);
-}
-
-void setEntryMode(){
-    LCD_CONTROL->OUT &= ~(RS|RW);
-    LCD_CONTROL->OUT &= ~E;
-    sendByte(NORMAL_ENTRY_MODE);
-}
-
-void sendByte(char byte){
-    char topBits = byte & 0xF0;
-    char bottomBits = byte & 0x0F;
-    topBits = topBits >> 4;
-    LCD_CONTROL->OUT &= ~E;
-    LCD_DATA->OUT &= 0xF0;
-    LCD_DATA->OUT |= topBits;
-    LCD_CONTROL->OUT |= E;
-    delay_us(0);
-    LCD_CONTROL->OUT &= ~E;
-    delay_us(40);
-    LCD_CONTROL->OUT &= ~E;
-    LCD_DATA->OUT &= 0xF0;
-    LCD_DATA->OUT |= bottomBits;
-    LCD_CONTROL->OUT |= E;
-    delay_us(0);
-    LCD_CONTROL->OUT &= ~E;
-    delay_us(40);
-}
-
-void homeLCD(){
-    LCD_CONTROL->OUT &= ~(RS|RW);
-    LCD_CONTROL->OUT &= ~E;
-    sendByte(0x00 | BIT7);
-}
-
-void changeLine(){
-    LCD_CONTROL->OUT &= ~(RS|RW);
-    LCD_CONTROL->OUT &= ~E;
-    sendByte(0x40 | BIT7);
-}
-
-void writeLCD(char input){
+void write_char(uint8_t c){
     LCD_CONTROL->OUT |= RS;
     LCD_CONTROL->OUT &= ~RW;
-    LCD_CONTROL->OUT &= ~E;
-    sendByte(input);
+    LCD_CONTROL->OUT &= E;
+    output(c);
     delay_us(40);
 }
-void writeStringLCD(char *input){
+
+void output(uint8_t data){
+    LCD_DATA->OUT = data >> 4;
+    toggleE();
+    LCD_DATA->OUT = data;
+    toggleE();
+}
+
+void writeStringLCD(char *s){
     int i;
-    for(i = 0; i < strlen(input); i++){
-        writeLCD(input[i]);
+    for(i = 0; i < strlen(s); i++){
+        write_char(s[i]);
     }
 }
 
+void initialFunctionSet(){
+    delay_us(40000);
+    LCD_CONTROL->OUT &= ~(RS|RW);
+    LCD_CONTROL->OUT &= ~E;
+    LCD_DATA->OUT = INITIAL_COMMAND;
+    toggleE();
+    delay_us(40);
+}
 
+void functionSet(){
+    write_data(FUNCTION_SET, 40);
+}
+
+void displayOn(){
+    write_data(DISPLAY_ON, 40);
+}
+
+void clearLCD(){
+    write_data(DISPLAY_CLEAR, 1600);
+}
+
+void entryMode(){
+    write_data(ENTRY_MODE, 40);
+}
+
+void initLCD(){
+    initialFunctionSet();
+    functionSet();
+    functionSet();
+    displayOn();
+    clearLCD();
+    entryMode();
+}
+
+void changeLine(uint8_t lineNumber){
+    uint8_t l;
+    if(lineNumber == 1){
+        l = LINE_1;
+    }
+    else{
+        l = LINE_2;
+    }
+    write_data(SET_LINE | l, 40);
+}
+
+void homeLCD(){
+    write_data(RETURN_HOME, 1600);
+}
+
+void toggleE(){
+    LCD_CONTROL->OUT |= E;
+    delay_us(0);
+    LCD_CONTROL->OUT &= ~E;
+}
