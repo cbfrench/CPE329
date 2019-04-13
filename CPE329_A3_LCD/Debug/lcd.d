@@ -21,6 +21,7 @@ lcd.obj: C:/ti/ccs900/ccs/ccs_base/arm/include/CMSIS/cmsis_compiler.h
 lcd.obj: C:/ti/ccs900/ccs/ccs_base/arm/include/CMSIS/cmsis_ccs.h
 lcd.obj: C:/ti/ccs900/ccs/ccs_base/arm/include/system_msp432p401r.h
 lcd.obj: ../delay.h
+lcd.obj: ../lcd.h
 
 ../lcd.c: 
 C:/ti/ccs900/ccs/tools/compiler/ti-cgt-arm_18.12.1.LTS/include/string.h: 
@@ -43,3 +44,4 @@ C:/ti/ccs900/ccs/ccs_base/arm/include/CMSIS/cmsis_compiler.h:
 C:/ti/ccs900/ccs/ccs_base/arm/include/CMSIS/cmsis_ccs.h: 
 C:/ti/ccs900/ccs/ccs_base/arm/include/system_msp432p401r.h: 
 ../delay.h: 
+../lcd.h: 

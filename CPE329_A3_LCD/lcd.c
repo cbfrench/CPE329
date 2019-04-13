@@ -8,115 +8,206 @@
 #include <stdint.h>
 #include "msp.h"
 #include "delay.h"
+#include "lcd.h"
 
-#define LCD_CONTROL P3
-#define LCD_DATA P4
-#define RS BIT5
-#define RW BIT6
-#define E BIT7
-#define INITIAL_COMMAND 0x33
-#define FUNCTION_SET 0x28
-#define DISPLAY_ON 0x0F
-#define DISPLAY_CLEAR 0x01
-#define ENTRY_MODE 0x06
-#define SET_LINE 0x80
-#define RETURN_HOME 0x02
-#define LINE_1 0x00
-#define LINE_2 0x40
+void initLCD()
+{
+    // P3 == Control
+    // P4 == Data
+    delay_us(6000);
 
-void write_data(uint8_t data, int delay_time);
-void write_char(uint8_t c);
-void output(uint8_t data);
-void writeStringLCD(char *s);
-void initialFunctionSet();
-void functionSet();
-void displayOn();
-void clearLCD();
-void entryMode();
-void initLCD();
-void changeLine(uint8_t lineNumber);
-void toggleE();
+    // Function Set: Empty
 
-void write_data(uint8_t data, int delay_time){
-    LCD_CONTROL->OUT &= ~(RS|RW);
-    LCD_CONTROL->OUT &= ~E;
-    output(data);
-    delay_us(delay_time);
-}
+    LCD_Control -> OUT &= ~E;           // Set E Low
+    LCD_Control -> OUT &= ~(RS | RW);   // Set RS and RW Low
+    LCD_Data -> OUT = 0x30;             // Write 00110000 (1st Function Set)
 
-void write_char(uint8_t c){
-    LCD_CONTROL->OUT |= RS;
-    LCD_CONTROL->OUT &= ~RW;
-    LCD_CONTROL->OUT &= E;
-    output(c);
-    delay_us(40);
-}
-
-void output(uint8_t data){
-    LCD_DATA->OUT = data >> 4;
-    toggleE();
-    LCD_DATA->OUT = data;
-    toggleE();
-}
-
-void writeStringLCD(char *s){
-    int i;
-    for(i = 0; i < strlen(s); i++){
-        write_char(s[i]);
-    }
-}
-
-void initialFunctionSet(){
-    delay_us(40000);
-    LCD_CONTROL->OUT &= ~(RS|RW);
-    LCD_CONTROL->OUT &= ~E;
-    LCD_DATA->OUT = INITIAL_COMMAND;
-    toggleE();
-    delay_us(40);
-}
-
-void functionSet(){
-    write_data(FUNCTION_SET, 40);
-}
-
-void displayOn(){
-    write_data(DISPLAY_ON, 40);
-}
-
-void clearLCD(){
-    write_data(DISPLAY_CLEAR, 1600);
-}
-
-void entryMode(){
-    write_data(ENTRY_MODE, 40);
-}
-
-void initLCD(){
-    initialFunctionSet();
-    functionSet();
-    functionSet();
-    displayOn();
-    clearLCD();
-    entryMode();
-}
-
-void changeLine(uint8_t lineNumber){
-    uint8_t l;
-    if(lineNumber == 1){
-        l = LINE_1;
-    }
-    else{
-        l = LINE_2;
-    }
-    write_data(SET_LINE | l, 40);
-}
-
-void homeLCD(){
-    write_data(RETURN_HOME, 1600);
-}
-
-void toggleE(){
-    LCD_CONTROL->OUT |= E;
+    LCD_Control -> OUT |= E;            // Pulse E
     delay_us(0);
-    LCD_CONTROL->OUT &= ~E;
+    LCD_Control -> OUT &= ~E;
+
+    delay_us(40);
+
+    // ****************************************************
+    // Function Set: Lines & Resolution
+
+    LCD_Control -> OUT &= ~(RS | RW);   // Set RS and RW Low
+    LCD_Control -> OUT &= ~E;           // Set E Low
+    LCD_Data -> OUT = 0x20;             // Write 0010 0000 (2nd Function Set)
+
+    LCD_Control -> OUT |= E;            // Pulse E
+    delay_us(0);
+    LCD_Control -> OUT &= ~E;
+
+    LCD_Data -> OUT = 0x80;             // Write 1000 0000  N=1 (2-Line), F=0 (5x8 Res)
+
+    LCD_Control -> OUT |= E;            // Pulse E
+    delay_us(0);
+    LCD_Control -> OUT &= ~E;
+
+    delay_us(40);
+
+    LCD_Control -> OUT &= ~(RS | RW);   // Set RS and RW Low
+    LCD_Control -> OUT &= ~E;           // Set E Low
+    LCD_Data -> OUT = 0x20;             // Write 0010 0000 (2nd Function Set)
+
+    LCD_Control -> OUT |= E;            // Pulse E
+    delay_us(0);
+    LCD_Control -> OUT &= ~E;
+
+    LCD_Data -> OUT = 0x80;             // Write 1000 0000  N=1 (2-Line), F=0 (5x8 Res)
+
+    LCD_Control -> OUT |= E;            // Pulse E
+    delay_us(0);
+    LCD_Control -> OUT &= ~E;
+
+    delay_us(40);
+
+    // ****************************************************
+    // Display On, Cursor, and Blink
+
+    LCD_Control -> OUT &= ~(RS | RW);   // Set RS and RW Low
+    LCD_Control -> OUT &= ~E;           // Set E Low
+    LCD_Data -> OUT = 0x00;             // Write 0000 0000 (Display Enable Upper Bits)
+
+    LCD_Control -> OUT |= E;            // Pulse E
+    delay_us(0);
+    LCD_Control -> OUT &= ~E;
+
+    LCD_Data -> OUT = 0xF0;             // Write 1111 0000 D=1 (Disp. On), C=1 (Cursor On), B=1 (Blink On)
+
+    LCD_Control -> OUT |= E;            // Pulse E
+    delay_us(0);
+    LCD_Control -> OUT &= ~E;
+
+    delay_us(40);
+
+    // ****************************************************
+    // Display Clear
+
+    LCD_Control -> OUT &= ~(RS | RW);   // Set RS and RW Low
+    LCD_Control -> OUT &= ~E;           // Set E Low
+    LCD_Data -> OUT = 0x00;             // Write 0000 0000 (Display Clear Upper Bits)
+
+    LCD_Control -> OUT |= E;            // Pulse E
+    delay_us(0);
+    LCD_Control -> OUT &= ~E;
+
+    LCD_Data -> OUT = 0x10;             // Write 0001 0000 (Display Clear Lower Bits)
+
+    LCD_Control -> OUT |= E;            // Pulse E
+    delay_us(0);
+    LCD_Control -> OUT &= ~E;
+
+    delay_us(40);
+
+    // ****************************************************
+    // Entry Mode Set
+
+    LCD_Control -> OUT &= ~(RS | RW);   // Set RS and RW Low
+    LCD_Control -> OUT &= ~E;           // Set E Low
+    LCD_Data -> OUT = 0x00;             // Write 0000 0000 (Entry Mode Upper Bits)
+
+    LCD_Control -> OUT |= E;            // Pulse E
+    delay_us(0);
+    LCD_Control -> OUT &= ~E;
+
+    LCD_Data -> OUT = 0x70;             // Write 0111 0000 I/D=1, S=1
+
+    LCD_Control -> OUT |= E;            // Pulse E
+    delay_us(0);
+    LCD_Control -> OUT &= ~E;
+
+    delay_us(40);
 }
+
+void writeChar(char character)
+{
+    uint8_t upperBits = 0xF0 & character;
+    uint8_t lowerBits = 0X0F & character;
+
+    lowerBits <<= 4;
+
+    LCD_Control -> OUT |= RS;           // Set RS High
+    LCD_Control -> OUT &= ~(RW | E);    // Set RW and E Low
+    LCD_Data -> OUT = upperBits;        // Write Upper Bits
+
+    LCD_Control -> OUT |= E;            // Pulse E
+    delay_us(1500);
+    LCD_Control -> OUT &= ~E;
+    delay_us(1500);
+
+    LCD_Data -> OUT = lowerBits;        // Write Lower Bits
+
+    LCD_Control -> OUT |= E;            // Pulse E
+    delay_us(1500);
+    LCD_Control -> OUT &= ~E;
+    delay_us(1500);
+}
+
+void writeString(char* string)
+{
+    int i;
+
+    for(i = 0; i < strlen(string); i++)
+    {
+        if(string[i] == '\n' || i > 16) changeLine();
+
+        writeChar(string[i]);
+    }
+}
+
+void changeLine()
+{
+    static int lineChanged = 0;
+
+    if(!lineChanged)
+    {
+        LCD_Control -> OUT &= ~(RS | RW | E);    // Set RW and E Low
+        LCD_Data -> OUT = 0xC0;                  // Write Upper Bits (Row 2)
+
+        LCD_Control -> OUT |= E;                 // Pulse E
+        delay_us(1500);
+        LCD_Control -> OUT &= ~E;
+        delay_us(1500);
+
+        LCD_Data -> OUT = 0x00;                  // Write Lower Bits (Zeros)
+
+        LCD_Control -> OUT |= E;                 // Pulse E
+        delay_us(1500);
+        LCD_Control -> OUT &= ~E;
+        delay_us(1500);
+    }
+    else
+    {
+        LCD_Control -> OUT &= ~(RS | RW | E);    // Set RW and E Low
+        LCD_Data -> OUT = 0x00;                  // Write Upper Bits (Zeros)
+
+        LCD_Control -> OUT |= E;                 // Pulse E
+        delay_us(1500);
+        LCD_Control -> OUT &= ~E;
+        delay_us(1500);
+
+        LCD_Data -> OUT = 0x00;                  // Write Lower Bits (Zeros)
+
+        LCD_Control -> OUT |= E;                 // Pulse E
+        delay_us(1500);
+        LCD_Control -> OUT &= ~E;
+        delay_us(1500);
+    }
+
+    lineChanged = ~lineChanged;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
