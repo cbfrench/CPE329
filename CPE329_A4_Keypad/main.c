@@ -22,18 +22,21 @@ void main(void)
 	P4 -> DIR |= D04 | D05 | D06 | D07;
 
 	//set up pins for keypad rows
-	P2 -> SEL0 &= ~ (ROW1 | ROW2 | ROW3 | ROW4);
-	P2 -> SEL1 &= ~(ROW1 | ROW2 | ROW3 | ROW4);
-	P2 -> DIR |= ROW1 | ROW2 | ROW3 | ROW4;
-	P2 -> REN |= ROW1 | ROW2 | ROW3 | ROW4;
-	P2 -> OUT &= ~(ROW1 | ROW2 | ROW3 | ROW4);
+	P4 -> SEL0 &= ~ (ROW1 | ROW2 | ROW3 | ROW4);
+	P4 -> SEL1 &= ~(ROW1 | ROW2 | ROW3 | ROW4);
+	P4 -> DIR &= ~(ROW1 | ROW2 | ROW3 | ROW4);
+	P4 -> REN |= ROW1 | ROW2 | ROW3 | ROW4;
+	P4 -> OUT &= ~(ROW1 | ROW2 | ROW3 | ROW4);
 
 	//set up pins for keypad columns
 	P5 -> SEL0 &= ~ (COL1 | COL2 | COL3);
 	P5 -> SEL1 &= ~(COL1 | COL2 | COL3);
 	P5 -> DIR |= COL1 | COL2 | COL3;
 
+	set_DCO(FREQ_24_MHz);
+
 	init_LCD();
+	write_string("RUNNING");
 	while(1){
 	    keyPressed = check_key_pressed();
 	    if(keyPressed != -1){
