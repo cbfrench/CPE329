@@ -17,6 +17,6 @@
 
 void set_DCO(uint32_t frequency);
 void delay_us(int delay);
-
+void delay_ms(int delay);
 
 #endif /* DELAY_H_ */

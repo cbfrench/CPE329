@@ -64,3 +64,10 @@ void delay_us(int delay)
 
     for(i=delayLoopIterator; i > 0; i--);
 }
+
+
+void delay_ms(int delay)
+{
+    // Wrapper for delay_us(), simply multiplying the desired input by 1000
+    delay_us(delay * 1000);
+}
