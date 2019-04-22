@@ -8,6 +8,8 @@
 #ifndef DELAY_H_
 #define DELAY_H_
 
+#include "msp.h"
+
 #define FREQ_1_5_MHz    ((uint32_t)0x00000000)
 #define FREQ_3_MHz      ((uint32_t)0x00010000)
 #define FREQ_6_MHz      ((uint32_t)0x00020000)

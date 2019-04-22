@@ -1,4 +1,3 @@
-#include "msp.h"
 #include "delay.h"
 
 void set_DCO(uint32_t frequency)

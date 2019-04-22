@@ -2,72 +2,7 @@
 #include "delay.h"
 #include "lcd.h"
 #include "keypad.h"
-
-int check_code(char attempt[]){
-    int i;
-    char combo[4] = {'0', '7', '1', '6'};
-    for(i = 0; i < 4; i++){
-        if(attempt[i] != combo[i]){
-            return 0;
-        }
-    }
-    return 1;
-}
-
-void run_combo_lock(){
-    int key;
-    int success;
-    static int count = 0;
-    char attempt[4];
-
-    while(1) {
-        clear_LCD();
-        home_LCD();
-        write_string("LOCKED");
-        change_line();
-        write_string("ENTER KEY");
-
-        while(1){
-            if(count == 4)
-            {
-                //4 digit code entered
-                success = check_code(attempt);
-                if(success)
-                {
-                    //attempt is a match to combination
-                    clear_LCD();
-                    home_LCD();
-                    write_string("UNLOCKED");
-                }
-                //reset count to 0 after every guess
-                count = 0 ;
-            }
-            key = check_key_pressed();
-            if(key != -1)
-            {
-                //key is pressed
-                if(key == '*')
-                {
-                    success = (success == 1) ? 0 : success;
-                    break;
-                }
-                else if (success != 1)
-                {
-                    if(count == 0)
-                    {
-                        clear_LCD();
-                        home_LCD();
-                    }
-                    //write key to screen, store key, and increment count
-                    write_char_LCD(key);
-                    attempt[count] = (char)key;
-                    count++;
-                }
-            }
-            delay_ms(300);
-        }
-    }
-}
+#include "digitalLock.h"
 
 void main(void)
 {
@@ -95,8 +30,10 @@ void main(void)
     P5 -> SEL1 &= ~(COL1 | COL2 | COL3);
     P5 -> DIR |= COL1 | COL2 | COL3;
 
+    // Set Clock for 24 MHz Operations
     set_DCO(FREQ_24_MHz);
 
+    // Initialize the LCD and run code
     init_LCD();
     run_combo_lock();
 }
