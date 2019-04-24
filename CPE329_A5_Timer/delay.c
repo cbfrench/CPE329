@@ -21,7 +21,7 @@ void set_DCO(uint32_t frequency)
     CS -> CTL0 = CS_CTL0_DCOEN | frequency;             // Enable DCOCLK | Set Freq
     CS -> CTL1 = CS_CTL1_DIVM_0 | CS_CTL1_SELM__DCOCLK; // Divide by 1 | Use DCOCLK
 
-    CS -> CLKEN = CS_CLKEN_MCLK_EN | CS_CLKEN_REFOFSEL; // Enable MCLK | Enable Nominal Ref
+    CS -> CLKEN = CS_CLKEN_MCLK_EN | CS_CLKEN_REFOFSEL | CS_CLKEN_SMCLK_EN; // Enable MCLK | Enable Nominal Ref
 
     CS -> KEY = 0;                                      // Lock CS
 }
