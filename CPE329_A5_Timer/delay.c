@@ -19,9 +19,13 @@ void set_DCO(uint32_t frequency)
     CS -> KEY = CS_KEY_VAL;                             // Unlock CS
 
     CS -> CTL0 = CS_CTL0_DCOEN | frequency;             // Enable DCOCLK | Set Freq
-    CS -> CTL1 = CS_CTL1_DIVM_0 | CS_CTL1_SELM__DCOCLK; // Divide by 1 | Use DCOCLK
+    CS -> CTL1 = CS_CTL1_DIVM_0                         // Divide by 1
+                 | CS_CTL1_SELM__DCOCLK                 // Use DCOCLK as CLK source for both MCLK and SMCLK
+                 | CS_CTL1_SELS__DCOCLK;
 
-    CS -> CLKEN = CS_CLKEN_MCLK_EN | CS_CLKEN_REFOFSEL | CS_CLKEN_SMCLK_EN; // Enable MCLK | Enable Nominal Ref
+    CS -> CLKEN = CS_CLKEN_MCLK_EN                      // Enable MCLK
+                 | CS_CLKEN_REFOFSEL                    // Enable Nominal Ref
+                 | CS_CLKEN_SMCLK_EN;                   // Enable SMCLK
 
     CS -> KEY = 0;                                      // Lock CS
 }
