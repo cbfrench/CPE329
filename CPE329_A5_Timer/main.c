@@ -2,13 +2,15 @@
 #include "delay.h"
 
 // CURRENTLY CONFIGURED FOR A5 PART C
-#define LENGTH 84
+#define LENGTH 5000000
 
 #define OUTPUT P5
 
 /**
  * main.c
  */
+
+int counter = 0;
 
 void TA0_0_IRQHandler(void){
     //OUTPUT->OUT |= BIT5;
@@ -17,7 +19,7 @@ void TA0_0_IRQHandler(void){
         TIMER_A0->CCTL[0] &= ~TIMER_A_CCTLN_CCIFG;
 
         //OUTPUT->OUT ^= BIT7;
-        P1->OUT ^= BIT0;
+        counter++;
         TIMER_A0->CCR[0] += LENGTH;
     }
 
@@ -54,5 +56,11 @@ void main(void)
 	TIMER_A0->CCTL[0] |= TIMER_A_CCTLN_CCIE;            // Enable Interrupts
 	NVIC->ISER[0] = 1 << (TA0_0_IRQn & 31);
 	__enable_irq();
-	while(1);
+	while(1){
+	    if(counter >= 750){
+	        printf("BLINK\n");
+	        P1->OUT ^= BIT0;
+	        counter = 0;
+	    }
+	}
 }
