@@ -9,23 +9,17 @@ void set_DCO(uint32_t frequency)
         PCM->CTL0 = PCM_CTL0_KEY_VAL | PCM_CTL0_AMR_1;
         while((PCM->CTL1 & PCM_CTL1_PMR_BUSY));
 
-        FLCTL->BANK0_RDCTL = (FLCTL->BANK0_RDCTL &
-         ~(FLCTL_BANK0_RDCTL_WAIT_MASK)) | FLCTL_BANK0_RDCTL_WAIT_1;
-        FLCTL->BANK1_RDCTL = (FLCTL->BANK0_RDCTL &
-         ~(FLCTL_BANK1_RDCTL_WAIT_MASK)) | FLCTL_BANK1_RDCTL_WAIT_1;
+        FLCTL->BANK0_RDCTL = (FLCTL->BANK0_RDCTL & ~(FLCTL_BANK0_RDCTL_WAIT_MASK)) | FLCTL_BANK0_RDCTL_WAIT_1;
+        FLCTL->BANK1_RDCTL = (FLCTL->BANK0_RDCTL & ~(FLCTL_BANK1_RDCTL_WAIT_MASK)) | FLCTL_BANK1_RDCTL_WAIT_1;
     }
 
     // Use DCO as source for MCLK and set DCO Frequency from 1.5 to 48MHz
     CS -> KEY = CS_KEY_VAL;                             // Unlock CS
 
     CS -> CTL0 = CS_CTL0_DCOEN | frequency;             // Enable DCOCLK | Set Freq
-    CS -> CTL1 = CS_CTL1_DIVM_0                         // Divide by 1
-                 | CS_CTL1_SELM__DCOCLK                 // Use DCOCLK as CLK source for both MCLK and SMCLK
-                 | CS_CTL1_SELS__DCOCLK;
+    CS -> CTL1 = CS_CTL1_DIVM_0 | CS_CTL1_SELM__DCOCLK | CS_CTL1_SELS__DCOCLK;
 
-    CS -> CLKEN = CS_CLKEN_MCLK_EN                      // Enable MCLK
-                 | CS_CLKEN_REFOFSEL                    // Enable Nominal Ref
-                 | CS_CLKEN_SMCLK_EN;                   // Enable SMCLK
+    CS -> CLKEN = CS_CLKEN_MCLK_EN | CS_CLKEN_REFOFSEL | CS_CLKEN_SMCLK_EN;
 
     CS -> KEY = 0;                                      // Lock CS
 }
