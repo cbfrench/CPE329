@@ -9,13 +9,20 @@
 #define CS_SPI BIT0
 
 #define FREQ_100_Hz 30000
-#define FREQ_200_Hz 15000
+#define FREQ_200_Hz 20000
 #define FREQ_300_Hz 10000
 #define FREQ_400_Hz 7500
 #define FREQ_500_Hz 6000
 
 #define LENGTH 60000
-#define SAMPLE_RATE 25
+
+int SAMPLE_RATE = 600;
+
+int sampleRate_500Hz = 118;
+int sampleRate_400Hz = 148;
+int sampleRate_300Hz = 198;
+int sampleRate_200Hz = 295;
+int sampleRate_100Hz = 600;
 
 uint16_t voltage = 0;
 int8_t factor = 1;
@@ -84,27 +91,12 @@ void TA0_0_IRQHandler(void) {
 void TA0_N_IRQHandler(void) {
     if (TIMER_A0->CCTL[1] & TIMER_A_CCTLN_CCIFG) {
         TIMER_A0->CCTL[1] &= ~TIMER_A_CCTLN_CCIFG;
-        TIMER_A0->CCR[1] += SAMPLE_RATE * 2;
+        TIMER_A0->CCR[1] += SAMPLE_RATE *2;
 
-        /*
-        switch(wave)
-        {
-            case SINE:
-                voltage = lookupTable.array[sampleRate_Iterator];
-                break;
-            case SAWTOOTH:
+        voltage = lookupTable.array[sampleRate_Iterator];
 
-                break;
-            default: //SQUARE
-                voltage = factor*2;
-                break;
-        }*/
-        //voltage = lookupTable.array[sampleRate_Iterator];
-
-        //sampleRate_Iterator++;
-        //if(sampleRate_Iterator >= lookupTable.used) sampleRate_Iterator = 0;
-
-        P6 -> OUT ^= BIT4;
+        sampleRate_Iterator++;
+        if(sampleRate_Iterator >= lookupTable.used) sampleRate_Iterator = 0;
     }
 }
 
@@ -153,14 +145,14 @@ void recalculateLookup()
             while(iterator <= length)
             {
               insertArray(&lookupTable, (uint16_t)(2047*sin(((2*3.14159)/length)*iterator)+2047));
-              iterator += (length/(SAMPLE_RATE*2));
+              iterator += (length/(50));
             }
             break;
         case SAWTOOTH:
             while(iterator <= length)
             {
-                insertArray(&lookupTable, (uint16_t)(4095*(iterator/length)));
-                iterator += (length/(SAMPLE_RATE*2));
+                insertArray(&lookupTable, (uint16_t)(4095*((float)iterator/length)));
+                iterator += (length/(50));
             }
             break;
         default:   // SQUARE
@@ -169,14 +161,13 @@ void recalculateLookup()
                 if(iterator <= length*duty_cycle) insertArray(&lookupTable, 4095);
                 else insertArray(&lookupTable, 0);
 
-                iterator += (length/(SAMPLE_RATE*2));
+                iterator += (length/(50));
             }
             break;
     }
 
     __enable_irq();                                 // Re-Enable Interrupts
 }
-
 void main(void) {
     set_DCO(FREQ_12_MHz);
     length = FREQ_100_Hz;
@@ -193,22 +184,27 @@ void main(void) {
         switch(key){
             case('1'):
                 length = FREQ_100_Hz;
+                SAMPLE_RATE = sampleRate_100Hz;
                 recalculateLookup();
                 break;
             case('2'):
                 length = FREQ_200_Hz;
+                SAMPLE_RATE = sampleRate_200Hz;
                 recalculateLookup();
                 break;
             case('3'):
                 length = FREQ_300_Hz;
+                SAMPLE_RATE = sampleRate_300Hz;
                 recalculateLookup();
                 break;
             case('4'):
                 length = FREQ_400_Hz;
+                SAMPLE_RATE = sampleRate_400Hz;
                 recalculateLookup();
                 break;
             case('5'):
                 length = FREQ_500_Hz;
+                SAMPLE_RATE = sampleRate_500Hz;
                 recalculateLookup();
                 break;
             case('7'):
@@ -224,7 +220,7 @@ void main(void) {
                 recalculateLookup();
                 break;
             case('*'):
-                duty_cycle = (duty_cycle <= 0.1)? 0.1:duty_cycle-0.1;
+                duty_cycle = (duty_cycle <= 0.1)? 0.1:(duty_cycle-0.1);
                 recalculateLookup();
                 break;
             case('0'):
@@ -232,7 +228,10 @@ void main(void) {
                 recalculateLookup();
                 break;
             case('#'):
-                duty_cycle = (duty_cycle >= 0.9)? 0.9:duty_cycle+0.1;
+                if(duty_cycle==0.5) duty_cycle = 0.6;
+                else if (duty_cycle==0.6) duty_cycle = 0.7;
+                else if (duty_cycle==0.7) duty_cycle = 0.8;
+                else if (duty_cycle==0.8) duty_cycle = 0.9;
                 recalculateLookup();
                 break;
             default:
