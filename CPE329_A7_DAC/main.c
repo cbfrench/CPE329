@@ -7,7 +7,7 @@
 
 #define LENGTH 60000
 
-volatile uint16_t voltage = 0;
+volatile uint16_t voltage = 1500;
 volatile int8_t factor = 1;
 
 void init_SPI(void) {
@@ -23,7 +23,7 @@ void init_SPI(void) {
     P1->SEL0 |= (BIT5|BIT6);
     P1->SEL1 &= ~(BIT5|BIT6);
     P1->DIR |= BIT0;
-    P1->OUT |= CHIP_SEL;
+    P1->OUT |= CS;
     EUSCI_B0->CTLW0 &= ~EUSCI_B_CTLW0_SWRST;
 }
 
@@ -32,13 +32,13 @@ void set_voltage(uint16_t val) {
     loByte = val & 0xFF;
     hiByte = (val >> 8) & 0x0F;
     hiByte |= (SHUTDOWN|GAIN);
-    P1->OUT &= ~CHIP_SEL;
+    P1->OUT &= ~CS;
     while(!(EUSCI_B0->IFG & EUSCI_B_IFG_TXIFG));
     EUSCI_B0->TXBUF = hiByte;
     while(!(EUSCI_B0->IFG & EUSCI_B_IFG_TXIFG));
     EUSCI_B0->TXBUF = loByte;
     while(!(EUSCI_B0->IFG & EUSCI_B_IFG_RXIFG));
-    P1->OUT |= CHIP_SEL;
+    P1->OUT |= CS;
 }
 
 void TA0_0_IRQHandler(void) {
@@ -51,7 +51,7 @@ void TA0_N_IRQHandler(void) {
     if (TIMER_A0->CCTL[1] & TIMER_A_CCTLN_CCIFG) {
         TIMER_A0->CCTL[1] &= ~TIMER_A_CCTLN_CCIFG;
         TIMER_A0->CCR[1] += 50;
-        voltage += factor*2;
+        voltage = 1600 * (factor + 1) * 2 + 1600; //voltage += factor*2; for triangle wave
     }
 }
 
