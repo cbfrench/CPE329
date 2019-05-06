@@ -18,6 +18,7 @@
 volatile uint16_t voltage = 0;
 volatile int8_t factor = 1;
 int length = LENGTH;
+float duty_cycle = 0.5;
 
 enum wave_type {SINE, SQUARE, SAWTOOTH};
 
@@ -56,7 +57,17 @@ void set_voltage(uint16_t val) {
 
 void TA0_0_IRQHandler(void) {
     TIMER_A0->CCTL[0] &= ~TIMER_A_CCTLN_CCIFG;
-    TIMER_A0->CCR[0] += length;
+    if(wave != SQUARE){
+        TIMER_A0->CCR[0] += length;
+    }
+    else{
+        if(factor == 1){
+            TIMER_A0->CCR[0] += length;
+        }
+        else{
+            TIMER_A0->CCR[0] += length * (1 - duty_cycle) * 2;
+        }
+    }
     if(wave != SAWTOOTH){
         factor *= -1;
     }
@@ -155,9 +166,25 @@ void main(void) {
                 wave = SAWTOOTH;
                 factor = 1;
                 break;
+            case('*'):
+                duty_cycle -= 0.1;
+                if(duty_cycle <= 0){
+                    duty_cycle = 0.1;
+                }
+                break;
+            case('0'):
+                duty_cycle = 0.5;
+                break;
+            case('#'):
+                duty_cycle += 0.1;
+                if(duty_cycle >= 1){
+                    duty_cycle = 0.9;
+                }
+                break;
             default:
                 break;
         }
+        printf("%f\n", duty_cycle);
         set_voltage(voltage);
     }
 }
