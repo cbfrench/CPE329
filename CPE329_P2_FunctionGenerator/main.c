@@ -6,11 +6,11 @@
 #define GAIN BIT5
 #define CS BIT0
 
-#define FREQ_100_Hz 60000
-#define FREQ_200_Hz 120000
-#define FREQ_300_Hz 180000
-#define FREQ_400_Hz 240000
-#define FREQ_500_Hz 300000
+#define FREQ_100_Hz 30000
+#define FREQ_200_Hz 15000
+#define FREQ_300_Hz 10000
+#define FREQ_400_Hz 7500
+#define FREQ_500_Hz 6000
 
 #define LENGTH 60000
 #define SAMPLE_RATE 25
