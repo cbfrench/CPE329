@@ -58,19 +58,14 @@ void set_voltage(uint16_t val) {
 void TA0_0_IRQHandler(void) {
     TIMER_A0->CCTL[0] &= ~TIMER_A_CCTLN_CCIFG;
     if(wave != SQUARE){
-        if(wave == SINE){
-            TIMER_A0->CCR[0] += approximate_sine(length);
-        }
-        else{
-            TIMER_A0->CCR[0] += length;
-        }
+        TIMER_A0->CCR[0] += length;
     }
     else{
-        if(factor == 1){
+        if(1){//factor == 1){
             TIMER_A0->CCR[0] += length;
         }
         else{
-            TIMER_A0->CCR[0] += length * (1 - duty_cycle) * 2;
+            //TIMER_A0->CCR[0] += length * (1 - duty_cycle) * 2;
         }
     }
     if(wave != SAWTOOTH){
@@ -98,7 +93,7 @@ void TA0_N_IRQHandler(void) {
     }
 }
 
-int approximate_sine(int x){
+int approximate_sine(float x){
     float PI = 3.1415926;
     float PI_SQUARED = 9.8696044;
     float numerator = 16 * x * (PI - x);
@@ -197,6 +192,11 @@ void main(void) {
             default:
                 break;
         }
-        set_voltage(voltage);
+        if(1){
+            set_voltage(voltage);
+        }
+        else{
+            set_voltage(approximate_sine(voltage));
+        }
     }
 }
