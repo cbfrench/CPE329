@@ -43,7 +43,7 @@ void set_voltage(uint16_t val) {
 
 void TA0_0_IRQHandler(void) {
     TIMER_A0->CCTL[0] &= ~TIMER_A_CCTLN_CCIFG;
-    TIMER_A0->CCR[0] += LENGTH;
+    TIMER_A0->CCR[0] += 60000;
     factor *= -1;
 }
 
@@ -51,7 +51,8 @@ void TA0_N_IRQHandler(void) {
     if (TIMER_A0->CCTL[1] & TIMER_A_CCTLN_CCIFG) {
         TIMER_A0->CCTL[1] &= ~TIMER_A_CCTLN_CCIFG;
         TIMER_A0->CCR[1] += 50;
-        voltage = 1600 * (factor + 1) * 2 + 1600; //voltage += factor*2; for triangle wave
+        voltage = 1600 * (factor + 1) * 2 + 1600;
+        //voltage += factor*2; //for triangle wave
     }
 }
 
