@@ -26,6 +26,7 @@ main.obj: C:/ti/ccs900/ccs/tools/compiler/ti-cgt-arm_18.12.1.LTS/include/_defs.h
 main.obj: C:/ti/ccs900/ccs/tools/compiler/ti-cgt-arm_18.12.1.LTS/include/machine/_limits.h
 main.obj: ../dynamicArray.h
 main.obj: C:/ti/ccs900/ccs/tools/compiler/ti-cgt-arm_18.12.1.LTS/include/stddef.h
+main.obj: ../lcd.h
 
 ../main.c: 
 C:/ti/ccs900/ccs/ccs_base/arm/include/msp.h: 
@@ -53,3 +54,4 @@ C:/ti/ccs900/ccs/tools/compiler/ti-cgt-arm_18.12.1.LTS/include/_defs.h:
 C:/ti/ccs900/ccs/tools/compiler/ti-cgt-arm_18.12.1.LTS/include/machine/_limits.h: 
 ../dynamicArray.h: 
 C:/ti/ccs900/ccs/tools/compiler/ti-cgt-arm_18.12.1.LTS/include/stddef.h: 
+../lcd.h: 

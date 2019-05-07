@@ -1,3 +1,11 @@
+/*
+ * dynamicArray.h
+ *
+ *  Created on: Apr 21, 2019
+ *      Author: Connor French and Joe Sandoval
+ *
+ *  Implements Dynamically-Resizable Arrays in C using Malloc
+ */
 #ifndef DYN_ARRAY
 #define DYN_ARRAY
 
