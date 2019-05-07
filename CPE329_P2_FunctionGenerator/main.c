@@ -171,6 +171,85 @@ void recalculateLookup()
 
     __enable_irq();                                 // Re-Enable Interrupts
 }
+
+void change_duty_cycle(int direction){
+    //direction is 0 for decrement, 1 for increment
+    switch(duty_cycle){
+        case 0.1:
+            if(direction){
+                duty_cycle = 0.2;
+            }
+            else{
+                duty_cycle = 0.1;
+            }
+            break;
+        case 0.2:
+            if(direction){
+                duty_cycle = 0.3;
+            }
+            else{
+                duty_cycle = 0.1;
+            }
+            break;
+        case 0.3:
+            if(direction){
+                duty_cycle = 0.4;
+            }
+            else{
+                duty_cycle = 0.2;
+            }
+            break;
+        case 0.4:
+            if(direction){
+                duty_cycle = 0.5;
+            }
+            else{
+                duty_cycle = 0.3;
+            }
+            break;
+        case 0.5:
+            if(direction){
+                duty_cycle = 0.6;
+            }
+            else{
+                duty_cycle = 0.4;
+            }
+            break;
+        case 0.6:
+            if(direction){
+                duty_cycle = 0.7;
+            }
+            else{
+                duty_cycle = 0.5;
+            }
+            break;
+        case 0.7:
+            if(direction){
+                duty_cycle = 0.8;
+            }
+            else{
+                duty_cycle = 0.6;
+            }
+            break;
+        case 0.8:
+            if(direction){
+                duty_cycle = 0.9;
+            }
+            else{
+                duty_cycle = 0.7;
+            }
+            break;
+        case 0.9:
+            if(direction){
+                duty_cycle = 0.9;
+            }
+            else{
+                duty_cycle = 0.8;
+            }
+            break;
+    }
+}
+
 void main(void) {
     set_DCO(FREQ_12_MHz);
     length = FREQ_100_Hz;
@@ -224,8 +303,8 @@ void main(void) {
                 recalculateLookup();
                 break;
             case('*'):
-                duty_cycle = (duty_cycle <= (float)0.1) ? 0.1 : duty_cycle-0.1;
-                delay_ms(200);
+                change_duty_cycle(0);
+                //delay_ms(200);
                 recalculateLookup();
                 break;
             case('0'):
@@ -233,8 +312,8 @@ void main(void) {
                 recalculateLookup();
                 break;
             case('#'):
-                duty_cycle = (duty_cycle >= (float)0.9) ? 0.9 : duty_cycle+0.1;
-                delay_ms(200);
+                change_duty_cycle(1);
+                //delay_ms(200);
                 recalculateLookup();
                 break;
             default:
