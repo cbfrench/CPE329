@@ -3,6 +3,7 @@
 #include "keypad.h"
 #include "math.h"
 #include "dynamicArray.h"
+#include "lcd.h"
 
 #define SHUTDOWN BIT4
 #define GAIN BIT5
@@ -166,6 +167,8 @@ void recalculateLookup()
             break;
     }
 
+
+
     __enable_irq();                                 // Re-Enable Interrupts
 }
 void main(void) {
@@ -173,6 +176,7 @@ void main(void) {
     length = FREQ_100_Hz;
     duty_cycle = 0.5;
     init_timers();
+    init_LCD();
     init_SPI();
     init_keypad();
     set_voltage(0);
@@ -220,7 +224,8 @@ void main(void) {
                 recalculateLookup();
                 break;
             case('*'):
-                duty_cycle = (duty_cycle <= 0.1)? 0.1:(duty_cycle-0.1);
+                duty_cycle = (duty_cycle <= (float)0.1) ? 0.1 : duty_cycle-0.1;
+                delay_ms(200);
                 recalculateLookup();
                 break;
             case('0'):
@@ -228,10 +233,8 @@ void main(void) {
                 recalculateLookup();
                 break;
             case('#'):
-                if(duty_cycle==0.5) duty_cycle = 0.6;
-                else if (duty_cycle==0.6) duty_cycle = 0.7;
-                else if (duty_cycle==0.7) duty_cycle = 0.8;
-                else if (duty_cycle==0.8) duty_cycle = 0.9;
+                duty_cycle = (duty_cycle >= (float)0.9) ? 0.9 : duty_cycle+0.1;
+                delay_ms(200);
                 recalculateLookup();
                 break;
             default:
