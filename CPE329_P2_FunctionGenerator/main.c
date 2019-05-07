@@ -93,7 +93,7 @@ void TA0_N_IRQHandler(void) {
     if (TIMER_A0->CCTL[1] & TIMER_A_CCTLN_CCIFG) {
         TIMER_A0->CCTL[1] &= ~TIMER_A_CCTLN_CCIFG;
         TIMER_A0->CCR[1] += SAMPLE_RATE *2;
-
+      
         voltage = lookupTable.array[sampleRate_Iterator];
 
         sampleRate_Iterator++;
