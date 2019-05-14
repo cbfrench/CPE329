@@ -1,8 +1,5 @@
 /*
  * dac.h
- *
- *  Created on: May 8, 2019
- *      Author: conno
  */
 
 #ifndef DAC_H_

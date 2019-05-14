@@ -19,6 +19,9 @@ main.obj: C:/ti/ccs900/ccs/ccs_base/arm/include/CMSIS/cmsis_ccs.h
 main.obj: C:/ti/ccs900/ccs/ccs_base/arm/include/system_msp432p401r.h
 main.obj: ../delay.h
 main.obj: ../dac.h
+main.obj: C:/ti/ccs900/ccs/tools/compiler/ti-cgt-arm_18.12.1.LTS/include/string.h
+main.obj: C:/ti/ccs900/ccs/tools/compiler/ti-cgt-arm_18.12.1.LTS/include/_ti_config.h
+main.obj: C:/ti/ccs900/ccs/tools/compiler/ti-cgt-arm_18.12.1.LTS/include/linkage.h
 
 ../main.c: 
 C:/ti/ccs900/ccs/ccs_base/arm/include/msp.h: 
@@ -39,3 +42,6 @@ C:/ti/ccs900/ccs/ccs_base/arm/include/CMSIS/cmsis_ccs.h:
 C:/ti/ccs900/ccs/ccs_base/arm/include/system_msp432p401r.h: 
 ../delay.h: 
 ../dac.h: 
+C:/ti/ccs900/ccs/tools/compiler/ti-cgt-arm_18.12.1.LTS/include/string.h: 
+C:/ti/ccs900/ccs/tools/compiler/ti-cgt-arm_18.12.1.LTS/include/_ti_config.h: 
+C:/ti/ccs900/ccs/tools/compiler/ti-cgt-arm_18.12.1.LTS/include/linkage.h: 

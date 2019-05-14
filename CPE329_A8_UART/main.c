@@ -95,15 +95,7 @@ void main(void) {
     __enable_irq();
 
     while(1) {
-        if (flag) {
-            print_string(inValue);                  // Return Value sent over UART
-            voltage = atoi(inValue);                // Convert sent value to Integer
-            if (voltage < 4096 && voltage >= 0)
-                set_voltage(voltage);               // Set Voltage if within allowed range
-            flag = 0;                               // Clear Flags and temp. variables
-            index = 0;
-            voltage = 0;
-        }
+        print_string("butt");
     }
 
 }
