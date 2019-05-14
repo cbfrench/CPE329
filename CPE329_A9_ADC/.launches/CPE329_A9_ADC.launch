@@ -4,6 +4,7 @@
 <stringAttribute key="com.ti.ccstudio.debug.debugModel.ATTR_PROGRAM.C:\Users\conno\Documents\CPE329\CPE329\CPE329_A9_ADC\targetConfigs\MSP432P401R.ccxml.Texas Instruments XDS110 USB Debug Probe/CORTEX_M4_0" value="${build_artifact:CPE329_A9_ADC}"/>
 <stringAttribute key="com.ti.ccstudio.debug.debugModel.ATTR_PROJECT.C:\Users\conno\Documents\CPE329\CPE329\CPE329_A9_ADC\targetConfigs\MSP432P401R.ccxml.Texas Instruments XDS110 USB Debug Probe/CORTEX_M4_0" value="CPE329_A9_ADC"/>
 <stringAttribute key="com.ti.ccstudio.debug.debugModel.ATTR_TARGET_CONFIG" value="${target_config_active_default:CPE329_A9_ADC}"/>
+<stringAttribute key="com.ti.ccstudio.debug.debugModel.MRU_PROGRAM.C:\Users\conno\Documents\CPE329\CPE329\CPE329_A9_ADC\targetConfigs\MSP432P401R.ccxml.Texas Instruments XDS110 USB Debug Probe/CORTEX_M4_0" value="C:/Users\conno\Documents\CPE329\CPE329\CPE329_A9_ADC\Debug\CPE329_A9_ADC.out"/>
 <listAttribute key="org.eclipse.debug.core.MAPPED_RESOURCE_PATHS">
 <listEntry value="/CPE329_A9_ADC"/>
 </listAttribute>
