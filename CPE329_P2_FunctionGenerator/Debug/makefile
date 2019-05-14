@@ -13,6 +13,7 @@ ORDERED_OBJS += \
 "./delay.obj" \
 "./dynamicArray.obj" \
 "./keypad.obj" \
+"./lcd.obj" \
 "./main.obj" \
 "./startup_msp432p401r_ccs.obj" \
 "./system_msp432p401r.obj" \
@@ -159,8 +160,8 @@ CPE329_P2_FunctionGenerator.hex: $(EXE_OUTPUTS)
 # Other Targets
 clean:
 	-$(RM) $(BIN_OUTPUTS__QUOTED)$(EXE_OUTPUTS__QUOTED)
-	-$(RM) "delay.obj" "dynamicArray.obj" "keypad.obj" "main.obj" "startup_msp432p401r_ccs.obj" "system_msp432p401r.obj" 
-	-$(RM) "delay.d" "dynamicArray.d" "keypad.d" "main.d" "startup_msp432p401r_ccs.d" "system_msp432p401r.d" 
+	-$(RM) "delay.obj" "dynamicArray.obj" "keypad.obj" "lcd.obj" "main.obj" "startup_msp432p401r_ccs.obj" "system_msp432p401r.obj" 
+	-$(RM) "delay.d" "dynamicArray.d" "keypad.d" "lcd.d" "main.d" "startup_msp432p401r_ccs.d" "system_msp432p401r.d" 
 	-@echo 'Finished clean'
 	-@echo ' '
 
