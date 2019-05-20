@@ -350,6 +350,7 @@ void generate_interface(){
         print_string(rmsBarGenerator(writeValue));                     // Write RMS Bar
         print_string("      ");
         print_float(writeValue);                                       // Write Voltage Number
+        print_line(" V \n\r");
         print_line("              0      1     2     3   3.3");     // Write RMS Bar Graduations
     }
     else{
@@ -368,6 +369,7 @@ void generate_interface(){
         print_string(rmsBarGenerator(middle));                     // Write RMS Bar
         print_string("      ");
         print_float(middle);                                       // Write Voltage Number
+        print_line(" V \n\r");
         print_line("              0      1     2     3   3.3");     // Write RMS Bar Graduations
     }
 
