@@ -12,7 +12,7 @@ int flag = 0;
 char inValue[5];
 int index = 0;
 
-#define NUMBER_OF_SAMPLES 100
+#define NUMBER_OF_SAMPLES 20
 
 float inputMin = 1000;
 float inputMax = -1000;
@@ -26,6 +26,10 @@ float raw_middle;
 float middle;
 int sample = 0;
 double frequency;
+double vpp = 0;
+double vrms = 0;
+
+int count = 0;
 
 enum wave_type {SINE, SQUARE, TRIANGLE};
 enum wave_type wave;
@@ -50,6 +54,7 @@ void get_input_min_max(){
     }
     threshold = (inputMax - inputMin) / 10;   //sets threshold to 10% of difference
     raw_middle = (inputMax + inputMin) / 2;       //get rough average, will refine later
+    //vpp = inputMax - inputMin;
 }
 
 /**
@@ -66,6 +71,8 @@ void get_adjusted_min_max(){
         }
     }
     middle = (adjustedMax + adjustedMin) / 2;   //get finer average
+    vpp = adjustedMax - adjustedMin;
+    vrms = vpp * 0.3535 + middle;
 }
 
 /**
@@ -252,6 +259,10 @@ void print_float(float input){
     float f = input;
     int count = 0;
     int round;
+    if(f < 0){
+        print_char("-");
+        f = -f;
+    }
     while(f != 0 && count < 5){                     //while float is not zero, truncate to 5 chars
         if(count == 1){
             print_char('.');                        //print decimal at position 1
@@ -320,6 +331,16 @@ char* rmsBarGenerator(double voltage){
     return "[!!!!!!!!!!!!!!!!!!!!]";    // Means an Error Occurred
 }
 
+float get_average(){
+    int i;
+    float sum = 0;
+    for(i = 0; i < sample+1; i++){
+        sum += input[i];
+    }
+
+    return sum / sample;
+}
+
 /**
  *  Creates the Terminal-Based DMM interface
  */
@@ -355,20 +376,20 @@ void generate_interface(){
     }
     else{
         // Change Screen Color if Voltage is Too High
-        if(warningColor != 1 && middle >= 3.260) {
+        if(warningColor != 1 && vpp >= 3.260) {
             warningColor = 1;                                       // Set warningColor Flag
             color_terminal(WHT, RED);                               // Turn Background Red
         }
-        else if (warningColor == 1 && middle < 3.260) {
+        else if (warningColor == 1 && vrms < 3.260) {
             warningColor = 0;                                       // Unset warningColor Flag
             color_terminal(WHT, BLK);                               // Turn Background Black
         }
 
         // Write Voltage and RMS Bar
         print_string("  Voltage RMS: ");                            // Label Voltage
-        print_string(rmsBarGenerator(middle));                     // Write RMS Bar
+        print_string(rmsBarGenerator(vrms));                     // Write RMS Bar
         print_string("      ");
-        print_float(middle);                                       // Write Voltage Number
+        print_float(vrms);                                       // Write Voltage Number
         print_line(" V \n\r");
         print_line("              0      1     2     3   3.3");     // Write RMS Bar Graduations
     }
@@ -394,7 +415,7 @@ void get_voltage(){
             get_input_min_max();
             approximate_wave();
             get_adjusted_min_max();
-            get_frequency();
+            //get_frequency();
             sample = 0;
             //print out Vpp and Wrms somehow
             return;
@@ -405,7 +426,11 @@ void get_voltage(){
             sample++;
         }
     }
+    else if(mode == FREQ){
+
+    }
     else{
+        sample = 0;
         //DC mode
         ADC_16_cycles();
     }
@@ -454,6 +479,6 @@ void main(void)
             ADC14->CTL0 |= ADC14_CTL0_SC;           //start conversion
         }
         generate_interface();
-        delay_us(100000);                           //delay
+        delay_us(10000);                           //delay
     }
 }
