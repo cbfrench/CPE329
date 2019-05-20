@@ -22,6 +22,7 @@ float input[NUMBER_OF_SAMPLES];
 int approximate_square[NUMBER_OF_SAMPLES];
 float input_noise_removed[NUMBER_OF_SAMPLES];
 float threshold;
+float raw_middle;
 float middle;
 int sample = 0;
 double frequency;
@@ -48,7 +49,7 @@ void get_input_min_max(){
         }
     }
     threshold = (inputMax - inputMin) / 10;   //sets threshold to 10% of difference
-    middle = (inputMax + inputMin) / 2;       //get rough average, will refine later
+    raw_middle = (inputMax + inputMin) / 2;       //get rough average, will refine later
 }
 
 /**
@@ -322,7 +323,7 @@ char* rmsBarGenerator(double voltage){
 /**
  *  Creates the Terminal-Based DMM interface
  */
-void generate_interface(double voltage){
+void generate_interface(){
     static int warningColor = 0;
     clear_terminal();
 
@@ -333,23 +334,40 @@ void generate_interface(double voltage){
         print_line(" Hz \n\r");
         print_newline();
     }
-    else if (mode == DC || mode == AC){
+    else if (mode == DC){
         // Change Screen Color if Voltage is Too High
-        if(warningColor != 1 && voltage >= 3.260) {
+        if(warningColor != 1 && writeValue >= 3.260) {
             warningColor = 1;                                       // Set warningColor Flag
             color_terminal(WHT, RED);                               // Turn Background Red
         }
-        else if (warningColor == 1 && voltage < 3.260) {
+        else if (warningColor == 1 && writeValue < 3.260) {
             warningColor = 0;                                       // Unset warningColor Flag
             color_terminal(WHT, BLK);                               // Turn Background Black
         }
 
         // Write Voltage and RMS Bar
         print_string("  Voltage RMS: ");                            // Label Voltage
-        print_string(rmsBarGenerator(voltage));                     // Write RMS Bar
+        print_string(rmsBarGenerator(writeValue));                     // Write RMS Bar
         print_string("      ");
-        print_float(voltage);                                       // Write Voltage Number
-        print_line(" V \n\r");
+        print_float(writeValue);                                       // Write Voltage Number
+        print_line("              0      1     2     3   3.3");     // Write RMS Bar Graduations
+    }
+    else{
+        // Change Screen Color if Voltage is Too High
+        if(warningColor != 1 && middle >= 3.260) {
+            warningColor = 1;                                       // Set warningColor Flag
+            color_terminal(WHT, RED);                               // Turn Background Red
+        }
+        else if (warningColor == 1 && middle < 3.260) {
+            warningColor = 0;                                       // Unset warningColor Flag
+            color_terminal(WHT, BLK);                               // Turn Background Black
+        }
+
+        // Write Voltage and RMS Bar
+        print_string("  Voltage RMS: ");                            // Label Voltage
+        print_string(rmsBarGenerator(middle));                     // Write RMS Bar
+        print_string("      ");
+        print_float(middle);                                       // Write Voltage Number
         print_line("              0      1     2     3   3.3");     // Write RMS Bar Graduations
     }
 
@@ -433,7 +451,7 @@ void main(void)
 
             ADC14->CTL0 |= ADC14_CTL0_SC;           //start conversion
         }
-        generate_interface(writeValue);
+        generate_interface();
         delay_us(100000);                           //delay
     }
 }
