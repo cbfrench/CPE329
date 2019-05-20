@@ -5,7 +5,6 @@
 #include <string.h>
 
 int adc_flag = 0;
-int acdc_modeFlag = 0;
 volatile uint16_t readValue;
 volatile double writeValue;
 
@@ -30,8 +29,8 @@ double frequency;
 enum wave_type {SINE, SQUARE, TRIANGLE};
 enum wave_type wave;
 
-enum mode_type {AC, DC};
-enum mode_type mode = AC;
+enum mode_type {AC, DC, FREQ};
+enum mode_type mode = DC;
 
 enum terminalColors {BLK = 30, RED = 31, GRN = 32, YEL = 33, BLU = 34, MAG = 35, CYN = 36, WHT = 37};
 
@@ -57,7 +56,7 @@ void get_input_min_max(){
  */
 void get_adjusted_min_max(){
     int i;
-    for(i = 0; i < NUMBER_OR_SAMPLES; i++){
+    for(i = 0; i < NUMBER_OF_SAMPLES; i++){
         if(input_noise_removed[i] < adjustedMin){
             adjustedMin = input_noise_removed[i];
         }
@@ -326,35 +325,39 @@ char* rmsBarGenerator(double voltage){
  */
 void generate_interface(double voltage){
     static int warningColor = 0;
-
-    // Write Frequency To Terminal
     clear_terminal();
-    print_line("    Frequency: ---- Hz");
-    print_newline();
 
-    // Change Screen Color if Voltage is Too High
-    if(warningColor != 1 && voltage >= 3.260) {
-        warningColor = 1;                                       // Set warningColor Flag
-        color_terminal(WHT, RED);                               // Turn Background Red
+    if(mode == FREQ){
+        // Write Frequency To Terminal
+        print_line("    Frequency: ---- Hz");
+        print_newline();
     }
-    else if (warningColor == 1 && voltage < 3.260) {
-        warningColor = 0;                                       // Unset warningColor Flag
-        color_terminal(WHT, BLK);                               // Turn Background Black
+    else if (mode == DC || mode == AC){
+        // Change Screen Color if Voltage is Too High
+        if(warningColor != 1 && voltage >= 3.260) {
+            warningColor = 1;                                       // Set warningColor Flag
+            color_terminal(WHT, RED);                               // Turn Background Red
+        }
+        else if (warningColor == 1 && voltage < 3.260) {
+            warningColor = 0;                                       // Unset warningColor Flag
+            color_terminal(WHT, BLK);                               // Turn Background Black
+        }
+
+        // Write Voltage and RMS Bar
+        print_string("  Voltage RMS: ");                            // Label Voltage
+        print_string(rmsBarGenerator(voltage));                     // Write RMS Bar
+        print_string("      ");
+        print_float(voltage);                                       // Write Voltage Number
+        print_line("              0      1     2     3   3.3");     // Write RMS Bar Graduations
     }
 
-    // Write Voltage and RMS Bar
-    print_string("  Voltage RMS: ");                            // Label Voltage
-    print_string(rmsBarGenerator(voltage));                     // Write RMS Bar
-    print_string("      ");
-    print_float(voltage);                                       // Write Voltage Number
-    print_line("              0      1     2     3   3.3");     // Write RMS Bar Graduations
     print_newline();
     print_newline();
     print_string("  Measurement Mode: ");                       // Label Measurement Mode
-    if(acdc_modeFlag == 0) print_line("DC   >AC<   Freq");      // acdc_modeFlag = 0, measure AC
-    else if(acdc_modeFlag == 1) print_line(">DC<   AC   Freq"); // acdc_modeFlag = 1 , measure DC
-    else print_line("DC    AC  >Freq<")
-    print_line("  (Hint: GND P2.7 for AC Mode)");
+    if(mode == AC) print_line("DC   >AC<   Freq");      // acdc_modeFlag = 0, measure AC
+    else if(mode == DC) print_line(">DC<   AC   Freq"); // acdc_modeFlag = 1 , measure DC
+    else print_line("DC    AC  >Freq<");
+    print_line("  (Hint: GND P2.7 for AC Mode, P2.5 for FREQ)");
 
     print_newline();
 }
@@ -402,17 +405,24 @@ void main(void)
     P6->SEL0 |= BIT1;   // Setup P6.1 for ADC Input
     P6->SEL1 |= BIT1;
 
-    P2->SEL0 &= ~BIT7;  // Setup P2.7 for GPIO Input (AC/DC Switch)
+    P2->SEL0 &= ~BIT7;  // Setup P2.7 for GPIO Input (AC Switch)
     P2->SEL1 &= ~BIT7;
     P2->DIR &= ~BIT7;
     P2->REN |= BIT7;
     P2->OUT |= BIT7;
 
+    P2->SEL0 &= ~BIT5;  // Setup P2.5 for GPIO Input (FREQ Switch)
+    P2->SEL1 &= ~BIT5;
+    P2->DIR &= ~BIT5;
+    P2->REN |= BIT5;
+    P2->OUT |= BIT5;
+
     ADC14->CTL0 |= ADC14_CTL0_SC;                   //start conversion
     color_terminal(WHT, BLK);
     while(1){
-
-        acdc_modeFlag = !(P2->IN & BIT7);           // Set AC/DC Mode Flag to inverse value of P2.7
+        if(!(P2->IN & BIT7)) mode = AC;             // Switch operating mode based on GPIO input
+        else if(!(P2->IN & BIT5)) mode = FREQ;
+        else mode = DC;
 
         if(adc_flag){
             adc_flag = 0;                           //reset flag
