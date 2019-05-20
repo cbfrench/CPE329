@@ -11,22 +11,32 @@ int flag = 0;
 char inValue[5];
 int index = 0;
 
+#define NUMBER_OF_SAMPLES 100
+
 float inputMin = 1000;
 float inputMax = -1000;
 float adjustedMin = 1000;
 float adjustedMax = -1000;
-float input[100];
-int approximate_square[100];
-float input_noise_removed[100];
+float input[NUMBER_OF_SAMPLES];
+int approximate_square[NUMBER_OF_SAMPLES];
+float input_noise_removed[NUMBER_OF_SAMPLES];
 float threshold;
 float middle;
+int sample = 0;
+double frequency;
+
+enum wave_type {SINE, SQUARE, TRIANGLE};
+enum wave_type wave;
+
+enum mode_type {AC, DC};
+enum mode_type mode = AC;
 
 /**
  * Gets min and max input sampled and stores in globals
  */
 void get_input_min_max(){
     int i;
-    for(i = 0; i < input.length(); i++){
+    for(i = 0; i < NUMBER_OF_SAMPLES; i++){
         if(input[i] < inputMin){
             inputMin = input[i];
         }
@@ -34,8 +44,8 @@ void get_input_min_max(){
             inputMax = input[i];
         }
     }
-    threshold = (max - min) / 10;   //sets threshold to 10% of difference
-    middle = (max + min) / 2;       //get rough average, will refine later
+    threshold = (inputMax - inputMin) / 10;   //sets threshold to 10% of difference
+    middle = (inputMax + inputMin) / 2;       //get rough average, will refine later
 }
 
 /**
@@ -43,7 +53,7 @@ void get_input_min_max(){
  */
 void get_adjusted_min_max(){
     int i;
-    for(i = 0; i < input.length(); i++){
+    for(i = 0; i < NUMBER_OF_SAMPLES; i++){
         if(input_noise_removed[i] < adjustedMin){
             adjustedMin = input_noise_removed[i];
         }
@@ -59,7 +69,7 @@ void get_adjusted_min_max(){
  */
 void approximate_wave(){
     int i;
-    for(i = 0; i < input.length(); i++){
+    for(i = 0; i < NUMBER_OF_SAMPLES; i++){
         if(input[i] > threshold + middle){
             approximate_square[i] = 1;      //if above the required threshold, square wave is positive
         }
@@ -89,6 +99,37 @@ void approximate_wave(){
             }
         }
     }
+}
+
+void get_frequency(){
+    /**
+     * find first switch, then start counting until next switch
+     * use information about run speed and sample rate to determine frequency
+     */
+    int i;
+    int found_flip = 0;
+    int num_samples = 0;
+    double period;
+    for(i = 1; i < NUMBER_OF_SAMPLES; i++){
+        if(found_flip){
+            if(approximate_square[i-1] == -approximate_square[i]){
+                found_flip = 1;
+            }
+        }
+        else{
+            if(approximate_square[i-1] == -approximate_square[i]){
+                found_flip = 0;
+                period = (double)(num_samples * 16) / 3000000; //(number of samples * number of cycles per sample) / number of cycles a second
+                frequency = 1 / period;
+                return;
+            }
+            else{
+                num_samples++;
+            }
+        }
+    }
+    //if it makes it here, sampling rate is too low/wave is too fast
+    frequency = 0;
 }
 
 /**
@@ -179,20 +220,8 @@ void ADC14_IRQHandler(void){
     adc_flag = 1;                                   //set flag
 }
 
-void ADC_4_cycles(){
-    writeValue = 0.0002 * readValue + 0.0185;       //set output value for 4 cycles
-}
-
 void ADC_16_cycles(){
     writeValue = 0.0002 * readValue + 0.0001;       //set output value for 16 cycles
-}
-
-void ADC_96_cycles(){
-    writeValue = 0.0002 * readValue + 0.0008;       //set output value for 96 cycles
-}
-
-void ADC_192_cycles(){
-    writeValue = 0.0002 * readValue + 0.0024;       //set output value for 192 cycles
 }
 
 void print_float(float input){
@@ -211,6 +240,44 @@ void print_float(float input){
         count++;
     }
     print_char('\n');
+}
+
+/*
+ * Main function for running the DMM
+ */
+void get_voltage(){
+    if(mode == AC){
+        if(sample >= NUMBER_OF_SAMPLES){
+            //sample 100 times at 16 cycles each: 1600 cycles at 3MHz: less than 1ms per update
+            get_input_min_max();
+            approximate_wave();
+            get_adjusted_min_max();
+            get_frequency();
+            sample = 0;
+            //print out Vpp and Wrms somehow
+            return;
+        }
+        else{
+            ADC_16_cycles();    //16 cycles to sample once
+            input[sample] = writeValue;
+            sample++;
+        }
+    }
+    else{
+        if(sample >= NUMBER_OF_SAMPLES){
+            get_input_min_max();
+            approximate_wave();
+            get_adjusted_min_max();
+            //print average voltage
+            sample = 0;
+            return;
+        }
+        else{
+            ADC_16_cycles();    //16 cycles to sample once
+            input[sample] = writeValue;
+            sample++;
+        }
+    }
 }
 
 void main(void)
@@ -233,7 +300,7 @@ void main(void)
     while(1){
         if(adc_flag){
             adc_flag = 0;                           //reset flag
-            ADC_16_cycles();                        //use 16 cycles
+            get_voltage();
             print_float(writeValue);                //print converted value to UART
             ADC14->CTL0 |= ADC14_CTL0_SC;           //start conversion
         }
