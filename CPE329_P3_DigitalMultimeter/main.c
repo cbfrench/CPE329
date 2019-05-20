@@ -1,9 +1,11 @@
 #include "msp.h"
 #include "delay.h"
 #include "dac.h"
+#include <stdio.h>
 #include <string.h>
 
 int adc_flag = 0;
+int acdc_modeFlag = 0;
 volatile uint16_t readValue;
 volatile double writeValue;
 
@@ -31,6 +33,8 @@ enum wave_type wave;
 enum mode_type {AC, DC};
 enum mode_type mode = AC;
 
+enum terminalColors {BLK = 30, RED = 31, GRN = 32, YEL = 33, BLU = 34, MAG = 35, CYN = 36, WHT = 37};
+
 /**
  * Gets min and max input sampled and stores in globals
  */
@@ -53,7 +57,7 @@ void get_input_min_max(){
  */
 void get_adjusted_min_max(){
     int i;
-    for(i = 0; i < NUMBER_OF_SAMPLES; i++){
+    for(i = 0; i < NUMBER_OR_SAMPLES; i++){
         if(input_noise_removed[i] < adjustedMin){
             adjustedMin = input_noise_removed[i];
         }
@@ -111,13 +115,13 @@ void get_frequency(){
     int num_samples = 0;
     double period;
     for(i = 1; i < NUMBER_OF_SAMPLES; i++){
-        if(found_flip){
-            if(approximate_square[i-1] == -approximate_square[i]){
+        if(!found_flip){
+            if(approximate_square[i-1] != approximate_square[i]){
                 found_flip = 1;
             }
         }
         else{
-            if(approximate_square[i-1] == -approximate_square[i]){
+            if(approximate_square[i-1] != approximate_square[i]){
                 found_flip = 0;
                 period = (double)(num_samples * 16) / 3000000; //(number of samples * number of cycles per sample) / number of cycles a second
                 frequency = 1 / period;
@@ -147,7 +151,24 @@ void print_string(char* string) {
     int i;
     for (i = 0; i < strlen(string); i++)
         print_char(string[i]);
-    print_char('\n');
+}
+
+/**
+ * Writes an string of characters, then terminates the line with \CR+\LN
+ */
+void print_line(char* string){
+    print_string(string);
+
+    print_char(((char)0x0A));   // New Line
+    print_char(((char)0x0D));   // Carriage Return
+}
+
+/**
+ * Skips a Line in the Terminal
+ */
+void print_newline(){
+    print_char(((char)0x0A));   // New Line
+    print_char(((char)0x0D));   // Carriage Return
 }
 
 /**
@@ -202,6 +223,9 @@ void init_UART() {
     EUSCI_A0->IE |= EUSCI_A_IE_RXIE;
 }
 
+/**
+ * Initialize the Analog-To-Digital Converter Module
+ */
 void init_ADC(){
     ADC14->CTL0 &= ~ADC14_CTL0_ENC;                 //disable ADC
     ADC14->CTL0 = ADC14_CTL0_SHP                    //turn on, use SMCLK, set number of cycles to 16, set pulse mode to use ADC sample timer
@@ -239,7 +263,99 @@ void print_float(float input){
         }
         count++;
     }
-    print_char('\n');
+    print_string(" V \n\r");
+}
+
+/**
+ * Sends appropriate VT100 Terminal Command to clear Terminal and reset the cursor location
+ */
+void clear_terminal(){
+    print_string("\033[2J");    // ESC [ 2 J
+                                // 2 = Clear Entire Display; J = Command Specifier
+    print_string("\033[0;0H");  // ESC [ 0 ; 0 H
+                                //       X   Y  Coordinates; H = Command Specifier
+}
+
+/**
+ * Change the color of the Terminal using VT100 Terminal color commands
+ */
+void color_terminal(enum terminalColors foreColor, enum terminalColors backColor){
+    char foreColorTmp[2];
+    sprintf(foreColorTmp, "%d", foreColor);     // Convert number to character array
+    char backColorTmp[2];
+    sprintf(backColorTmp, "%d", backColor+10);  // Convert number to character array
+
+    print_string("\033[");      // ESC [
+    print_string(foreColorTmp); // Write Foreground Color
+    print_char(';');            // Delimiter
+    print_string(backColorTmp); // Write Background Color
+    print_char('m');            // Command Specifier (color)
+}
+
+/**
+ * Depending on input voltage (0 - 3.5), return up to 20 '#' characters on a sliding scale
+ */
+char* rmsBarGenerator(double voltage){
+    if(voltage <= 0)                             return "[                    ]";
+    else if(voltage > 0 && voltage <= 0.175)     return "[#                   ]";
+    else if(voltage > 0.175 && voltage <= 0.350) return "[##                  ]";
+    else if(voltage > 0.350 && voltage <= 0.525) return "[###                 ]";
+    else if(voltage > 0.525 && voltage <= 0.700) return "[####                ]";
+    else if(voltage > 0.700 && voltage <= 0.875) return "[#####               ]";
+    else if(voltage > 0.875 && voltage <= 1.050) return "[######              ]";
+    else if(voltage > 1.050 && voltage <= 1.225) return "[#######             ]";
+    else if(voltage > 1.225 && voltage <= 1.400) return "[########            ]";
+    else if(voltage > 1.400 && voltage <= 1.575) return "[#########           ]";
+    else if(voltage > 1.575 && voltage <= 1.750) return "[##########          ]";
+    else if(voltage > 1.750 && voltage <= 1.925) return "[###########         ]";
+    else if(voltage > 1.925 && voltage <= 2.100) return "[############        ]";
+    else if(voltage > 2.100 && voltage <= 2.275) return "[#############       ]";
+    else if(voltage > 2.275 && voltage <= 2.450) return "[##############      ]";
+    else if(voltage > 2.450 && voltage <= 2.625) return "[###############     ]";
+    else if(voltage > 2.625 && voltage <= 2.800) return "[################    ]";
+    else if(voltage > 2.800 && voltage <= 2.975) return "[#################   ]";
+    else if(voltage > 2.975 && voltage <= 3.150) return "[##################  ]";
+    else if(voltage > 3.150 && voltage <= 3.260) return "[################### ]";
+    else if (voltage > 3.260)                    return "[!!!!! TOO HIGH !!!!!]";
+
+    return "[!!!!!!!!!!!!!!!!!!!!]";    // Means an Error Occurred
+}
+
+/**
+ *  Creates the Terminal-Based DMM interface
+ */
+void generate_interface(double voltage){
+    static int warningColor = 0;
+
+    // Write Frequency To Terminal
+    clear_terminal();
+    print_line("    Frequency: ---- Hz");
+    print_newline();
+
+    // Change Screen Color if Voltage is Too High
+    if(warningColor != 1 && voltage >= 3.260) {
+        warningColor = 1;                                       // Set warningColor Flag
+        color_terminal(WHT, RED);                               // Turn Background Red
+    }
+    else if (warningColor == 1 && voltage < 3.260) {
+        warningColor = 0;                                       // Unset warningColor Flag
+        color_terminal(WHT, BLK);                               // Turn Background Black
+    }
+
+    // Write Voltage and RMS Bar
+    print_string("  Voltage RMS: ");                            // Label Voltage
+    print_string(rmsBarGenerator(voltage));                     // Write RMS Bar
+    print_string("      ");
+    print_float(voltage);                                       // Write Voltage Number
+    print_line("              0      1     2     3   3.3");     // Write RMS Bar Graduations
+    print_newline();
+    print_newline();
+    print_string("  Measurement Mode: ");                       // Label Measurement Mode
+    if(acdc_modeFlag) print_line("DC   >AC<");                  // If P2.7 if LOW, measure AC
+    else  print_line(">DC<   AC");                              // Else, Measure DC
+    print_line("  (Hint: GND P2.7 for AC Mode)");
+
+    print_newline();
 }
 
 /*
@@ -264,19 +380,8 @@ void get_voltage(){
         }
     }
     else{
-        if(sample >= NUMBER_OF_SAMPLES){
-            get_input_min_max();
-            approximate_wave();
-            get_adjusted_min_max();
-            //print average voltage
-            sample = 0;
-            return;
-        }
-        else{
-            ADC_16_cycles();    //16 cycles to sample once
-            input[sample] = writeValue;
-            sample++;
-        }
+        //DC mode
+        ADC_16_cycles();
     }
 }
 
@@ -293,17 +398,29 @@ void main(void)
 
     __enable_irq();
 
-    P6->SEL0 |= BIT1;
+    P6->SEL0 |= BIT1;   // Setup P6.1 for ADC Input
     P6->SEL1 |= BIT1;
 
+    P2->SEL0 &= ~BIT7;  // Setup P2.7 for GPIO Input (AC/DC Switch)
+    P2->SEL1 &= ~BIT7;
+    P2->DIR &= ~BIT7;
+    P2->REN |= BIT7;
+    P2->OUT |= BIT7;
+
     ADC14->CTL0 |= ADC14_CTL0_SC;                   //start conversion
+    color_terminal(WHT, BLK);
     while(1){
+
+        acdc_modeFlag = !(P2->IN & BIT7);           // Set AC/DC Mode Flag to inverse value of P2.7
+
         if(adc_flag){
             adc_flag = 0;                           //reset flag
             get_voltage();
-            print_float(writeValue);                //print converted value to UART
+            //ADC_16_cycles();                        //use 16 cycles
+
             ADC14->CTL0 |= ADC14_CTL0_SC;           //start conversion
         }
+        generate_interface(writeValue);
         delay_us(100000);                           //delay
     }
 }
