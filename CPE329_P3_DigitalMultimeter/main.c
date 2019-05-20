@@ -326,8 +326,9 @@ void generate_interface(double voltage){
     print_newline();
     print_newline();
     print_string("  Measurement Mode: ");                       // Label Measurement Mode
-    if(acdc_modeFlag) print_line("DC   >AC<");                  // If P2.7 if LOW, measure AC
-    else  print_line(">DC<   AC");                              // Else, Measure DC
+    if(acdc_modeFlag == 0) print_line("DC   >AC<   Freq");      // acdc_modeFlag = 0, measure AC
+    else if(acdc_modeFlag == 1) print_line(">DC<   AC   Freq"); // acdc_modeFlag = 1 , measure DC
+    else print_line("DC    AC  >Freq<")
     print_line("  (Hint: GND P2.7 for AC Mode)");
 
     print_newline();
