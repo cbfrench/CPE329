@@ -262,7 +262,6 @@ void print_float(float input){
         }
         count++;
     }
-    print_string(" V \n\r");
 }
 
 /**
@@ -329,7 +328,9 @@ void generate_interface(double voltage){
 
     if(mode == FREQ){
         // Write Frequency To Terminal
-        print_line("    Frequency: ---- Hz");
+        print_string("    Frequency: ");
+        print_float(frequency);
+        print_line(" Hz \n\r");
         print_newline();
     }
     else if (mode == DC || mode == AC){
@@ -348,6 +349,7 @@ void generate_interface(double voltage){
         print_string(rmsBarGenerator(voltage));                     // Write RMS Bar
         print_string("      ");
         print_float(voltage);                                       // Write Voltage Number
+        print_line(" V \n\r");
         print_line("              0      1     2     3   3.3");     // Write RMS Bar Graduations
     }
 
