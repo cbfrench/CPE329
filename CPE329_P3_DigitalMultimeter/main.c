@@ -1,43 +1,66 @@
 #include "msp.h"
 #include "delay.h"
-#include "dac.h"
 #include <stdio.h>
 #include <string.h>
+#include <math.h>
+
+#define SQUARE_PORT P4
+#define SQUARE_BIT BIT3
 
 int adc_flag = 0;
 volatile uint16_t readValue;
 volatile double writeValue;
+volatile uint64_t freq_counter;
+volatile uint16_t freq_acquire = 0;
+volatile uint16_t input_delay = 0;
+volatile uint16_t edges_hit = 0;
 
 int flag = 0;
 char inValue[5];
 int index = 0;
 
-#define NUMBER_OF_SAMPLES 20
+#define NUMBER_OF_SAMPLES 1000
+#define UPDATE_INTERFACE 1000
+#define PERIOD_CONSTANT 16
 
 float inputMin = 1000;
 float inputMax = -1000;
 float adjustedMin = 1000;
 float adjustedMax = -1000;
 float input[NUMBER_OF_SAMPLES];
+float input_squared[NUMBER_OF_SAMPLES];
 int approximate_square[NUMBER_OF_SAMPLES];
 float input_noise_removed[NUMBER_OF_SAMPLES];
 float threshold;
 float raw_middle;
 float middle;
 int sample = 0;
+double period;
 double frequency;
 double vpp = 0;
 double vrms = 0;
+int period_start;
+int period_end;
+
+float SUBTRACTION_CONSTANT = 0.35;
 
 int count = 0;
+int update_interface = 0;
 
 enum wave_type {SINE, SQUARE, TRIANGLE};
 enum wave_type wave;
 
-enum mode_type {AC, DC, FREQ};
+enum mode_type {AC, DC};
 enum mode_type mode = DC;
 
 enum terminalColors {BLK = 30, RED = 31, GRN = 32, YEL = 33, BLU = 34, MAG = 35, CYN = 36, WHT = 37};
+
+double max(double a, double b){
+    if(a > b){
+        return a;
+    }
+    return b;
+}
 
 /**
  * Gets min and max input sampled and stores in globals
@@ -52,7 +75,7 @@ void get_input_min_max(){
             inputMax = input[i];
         }
     }
-    threshold = (inputMax - inputMin) / 10;   //sets threshold to 10% of difference
+    threshold = (inputMax - inputMin) / 100;   //sets threshold to 1% of difference
     raw_middle = (inputMax + inputMin) / 2;       //get rough average, will refine later
     //vpp = inputMax - inputMin;
 }
@@ -70,9 +93,8 @@ void get_adjusted_min_max(){
             adjustedMax = input_noise_removed[i];
         }
     }
-    middle = (adjustedMax + adjustedMin) / 2;   //get finer average
+    middle = (adjustedMax + adjustedMin) / 2 + adjustedMin;   //get finer average
     vpp = adjustedMax - adjustedMin;
-    vrms = vpp * 0.3535 + middle;
 }
 
 /**
@@ -81,15 +103,6 @@ void get_adjusted_min_max(){
 void approximate_wave(){
     int i;
     for(i = 0; i < NUMBER_OF_SAMPLES; i++){
-        if(input[i] > threshold + middle){
-            approximate_square[i] = 1;      //if above the required threshold, square wave is positive
-        }
-        else if(input[i] < -threshold + middle){
-            approximate_square[i] = -1;     //if below the required threshold, square wave is negative
-        }
-        else{
-            approximate_square[i] = 0;      //data cannot be trusted
-        }
         if(i != 0){
             if(input[i-1] > input[i]){
                 if(input[i] + threshold > input[i-1])
@@ -117,30 +130,11 @@ void get_frequency(){
      * find first switch, then start counting until next switch
      * use information about run speed and sample rate to determine frequency
      */
-    int i;
-    int found_flip = 0;
-    int num_samples = 0;
-    double period;
-    for(i = 1; i < NUMBER_OF_SAMPLES; i++){
-        if(!found_flip){
-            if(approximate_square[i-1] != approximate_square[i]){
-                found_flip = 1;
-            }
-        }
-        else{
-            if(approximate_square[i-1] != approximate_square[i]){
-                found_flip = 0;
-                period = (double)(num_samples * 16) / 3000000; //(number of samples * number of cycles per sample) / number of cycles a second
-                frequency = 1 / period;
-                return;
-            }
-            else{
-                num_samples++;
-            }
-        }
-    }
-    //if it makes it here, sampling rate is too low/wave is too fast
-    frequency = 0;
+    freq_acquire = 1;
+    P4->IE |= BIT3;
+    _delay_cycles(24000000);
+    P4->IE &= ~BIT3;
+    freq_acquire = 0;
 }
 
 /**
@@ -236,7 +230,7 @@ void init_UART() {
 void init_ADC(){
     ADC14->CTL0 &= ~ADC14_CTL0_ENC;                 //disable ADC
     ADC14->CTL0 = ADC14_CTL0_SHP                    //turn on, use SMCLK, set number of cycles to 16, set pulse mode to use ADC sample timer
-            | ADC14_CTL0_SSEL_4
+            | ADC14_CTL0_SSEL__HSMCLK
             | ADC14_CTL0_SHT1__16
             | ADC14_CTL0_ON;
     ADC14->CTL1 = (14 << ADC14_CTL1_CSTARTADD_OFS)  //start at mem 14
@@ -249,10 +243,27 @@ void init_ADC(){
 void ADC14_IRQHandler(void){
     readValue = ADC14->MEM[14];                     //set read value
     adc_flag = 1;                                   //set flag
+    P1->OUT ^= BIT0;
 }
 
 void ADC_16_cycles(){
     writeValue = 0.0002 * readValue + 0.0001;       //set output value for 16 cycles
+}
+
+void print_freq(float input){
+    int f = input;
+    double digit;
+    char digits[4];
+    int count = 0;
+    int i;
+    while(f > 0 && count < 4){
+        digits[count] = f % 10 + '0';
+        f /= 10;
+        count++;
+    }
+    for(i = 3; i >= 0; i--){
+        print_char(digits[i]);
+    }
 }
 
 void print_float(float input){
@@ -341,6 +352,29 @@ float get_average(){
     return sum / sample;
 }
 
+float approximate_vrms(){
+    float return_value = 0;
+    int i;
+    int square = 1;
+    for(i = 0; i < NUMBER_OF_SAMPLES; i++){
+        return_value += (input[i] - inputMin);
+        if(raw_middle + threshold * 20 > input[i] && raw_middle - threshold * 20 < input[i]){
+            square = 0;
+        }
+    }
+    if(square){
+        SUBTRACTION_CONSTANT = 0.275;
+    }
+    else if(inputMax - inputMin > 1.8){
+        //higher voltages
+        SUBTRACTION_CONSTANT = 0.2 + (inputMax - inputMin - 3) * -0.1;
+    }
+    else{
+        SUBTRACTION_CONSTANT = 0.35;
+    }
+    return (vrms + sqrt(return_value / NUMBER_OF_SAMPLES) - SUBTRACTION_CONSTANT) / 2;
+}
+
 /**
  *  Creates the Terminal-Based DMM interface
  */
@@ -348,14 +382,14 @@ void generate_interface(){
     static int warningColor = 0;
     clear_terminal();
 
-    if(mode == FREQ){
+    /*if(mode == FREQ){
         // Write Frequency To Terminal
         print_string("    Frequency: ");
-        print_float(frequency);
+        print_freq(frequency);
         print_line(" Hz \n\r");
         print_newline();
-    }
-    else if (mode == DC){
+    }*/
+    if (mode == DC){
         // Change Screen Color if Voltage is Too High
         if(warningColor != 1 && writeValue >= 3.260) {
             warningColor = 1;                                       // Set warningColor Flag
@@ -392,6 +426,10 @@ void generate_interface(){
         print_float(vrms);                                       // Write Voltage Number
         print_line(" V \n\r");
         print_line("              0      1     2     3   3.3");     // Write RMS Bar Graduations
+        print_string("    Frequency: ");
+        print_freq(frequency);
+        print_line(" Hz \n\r");
+        print_newline();
     }
 
     print_newline();
@@ -415,20 +453,50 @@ void get_voltage(){
             get_input_min_max();
             approximate_wave();
             get_adjusted_min_max();
-            //get_frequency();
+            get_frequency();
+            vrms = approximate_vrms();
+            inputMin = 1000;
+            inputMax = -1000;
+            adjustedMin = 1000;
+            adjustedMax = -1000;
             sample = 0;
-            //print out Vpp and Wrms somehow
+            //printf("INPUT MAX: %f, INPUT MIN: %f\n", inputMax, inputMin);
             return;
         }
         else{
             ADC_16_cycles();    //16 cycles to sample once
             input[sample] = writeValue;
+            input_squared[sample] = writeValue * writeValue;
+            approximate_square[sample] = (SQUARE_PORT->IN & SQUARE_BIT) >> 3;
             sample++;
         }
     }
+    /*
     else if(mode == FREQ){
-
-    }
+        if(sample >= NUMBER_OF_SAMPLES){
+            //sample 100 times at 16 cycles each: 1600 cycles at 3MHz: less than 1ms per update
+            get_input_min_max();
+            approximate_wave();
+            get_adjusted_min_max();
+            get_frequency();
+            vrms = approximate_vrms();
+            inputMin = 1000;
+            inputMax = -1000;
+            adjustedMin = 1000;
+            adjustedMax = -1000;
+            sample = 0;
+            //printf("Min: %f, Max: %f\n", inputMin, inputMax);
+            return;
+        }
+        else{
+            P1->OUT ^= BIT0;
+            ADC_16_cycles();    //16 cycles to sample once
+            input[sample] = writeValue;
+            input_squared[sample] = writeValue * writeValue;
+            approximate_square[sample] = (SQUARE_PORT->IN & SQUARE_BIT) >> 3;  //using 4.3 as square wave input
+            sample++;
+        }
+    }*/
     else{
         sample = 0;
         //DC mode
@@ -436,16 +504,51 @@ void get_voltage(){
     }
 }
 
+void TA0_0_IRQHandler(void){
+    if(TIMER_A0->CCTL[0] & TIMER_A_CCTLN_CCIFG){
+        TIMER_A0->CCTL[0] &= ~TIMER_A_CCTLN_CCIFG;
+        if(P4->IN & BIT3){
+            if(freq_acquire){
+                period = 2.0 / edges_hit / 0.91;
+                frequency = 1 / period;
+                freq_acquire = 0;
+                edges_hit = 0;
+            }
+        }
+        TIMER_A0->CCR[0] += 10;
+    }
+}
+
+void PORT4_IRQHandler(void){
+    edges_hit++;
+    P4->IFG &= ~BIT3;
+}
+
 void main(void)
 {
     WDT_A->CTL = WDT_A_CTL_PW | WDT_A_CTL_HOLD;     // stop watchdog timer
-    set_DCO(FREQ_3_MHz);
+    set_DCO(FREQ_24_MHz);
 
     init_UART();
     init_ADC();
 
+    //set up timer for determining frequency
+    TIMER_A0->CTL |= TIMER_A_CTL_SSEL__SMCLK | TIMER_A_CTL_MC_2 | TIMER_A_CTL_ID_3 | TIMER_A_CTL_IE; //timer using SMCLK, up mode, no divider
+    TIMER_A0->CCR[0] = 500;
+    TIMER_A0->CCTL[0] |= TIMER_A_CCTLN_CCIE;        // Enable Interrupts
+
+    //set up pin for incoming square wave
+    P4->SEL0 &= ~BIT3;
+    P4->SEL1 &= ~BIT3;
+    P4->DIR &= ~BIT3;
+    P4->IES &= ~BIT3;
+    P4->IFG &= ~BIT3;
+    P4->IE &= ~BIT3;
+
     NVIC->ISER[0] = (1 << (ADC14_IRQn & 31));
     NVIC->ISER[1] = (1 << (EUSCIA0_IRQn & 31));
+    NVIC->ISER[0] = (1 << (TA0_0_IRQn & 31));
+    NVIC->ISER[1] = (1 << (PORT4_IRQn & 31));
 
     __enable_irq();
 
@@ -464,21 +567,37 @@ void main(void)
     P2->REN |= BIT5;
     P2->OUT |= BIT5;
 
+    //set up for testing
+    P1->SEL0 &= ~BIT0;
+    P1->SEL1 &= ~BIT0;
+    P1->DIR |= BIT0;
+
+
+
+
+
+
     ADC14->CTL0 |= ADC14_CTL0_SC;                   //start conversion
     color_terminal(WHT, BLK);
     while(1){
         if(!(P2->IN & BIT7)) mode = AC;             // Switch operating mode based on GPIO input
-        else if(!(P2->IN & BIT5)) mode = FREQ;
+        //else if(!(P2->IN & BIT5)) mode = FREQ;
         else mode = DC;
 
         if(adc_flag){
             adc_flag = 0;                           //reset flag
             get_voltage();
-            //ADC_16_cycles();                        //use 16 cycles
+            //vrms = approximate_vrms();
+            //P1->OUT ^= BIT0;
+            //ADC_16_cycles();       //use 16 cycles
+            update_interface++;
+            if(update_interface >= UPDATE_INTERFACE){
+                generate_interface();
+                update_interface = 0;
+            }
 
             ADC14->CTL0 |= ADC14_CTL0_SC;           //start conversion
         }
-        generate_interface();
-        delay_us(10000);                           //delay
+        delay_us(100);                           //delay
     }
 }
