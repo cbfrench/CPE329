@@ -435,10 +435,10 @@ void generate_interface(){
     print_newline();
     print_newline();
     print_string("  Measurement Mode: ");                       // Label Measurement Mode
-    if(mode == AC) print_line("DC   >AC<   Freq");      // acdc_modeFlag = 0, measure AC
-    else if(mode == DC) print_line(">DC<   AC   Freq"); // acdc_modeFlag = 1 , measure DC
+    if(mode == AC) print_line("DC   >AC<");      // acdc_modeFlag = 0, measure AC
+    else if(mode == DC) print_line(">DC<   AC"); // acdc_modeFlag = 1 , measure DC
     else print_line("DC    AC  >Freq<");
-    print_line("  (Hint: GND P2.7 for AC Mode, P2.5 for FREQ)");
+    print_line("  (Hint: GND P2.7 for AC Mode)");
 
     print_newline();
 }
