@@ -4,7 +4,7 @@
 
 #define SERVO_PORT P6
 #define SERVO_PIN BIT2
-#define MIDDLE 5000000
+#define ONE_MS 5000000  //needs to calibrated
 
 int key, key_one = -1, key_two = -1;
 int angle = 90;
@@ -41,7 +41,7 @@ void TA0_0_IRQHandler(void) {
         TIMER_A0->CCTL[0] &= ~TIMER_A_CCTLN_CCIFG;
         if(angle_set){
             SERVO_PORT->OUT |= SERVO_PIN;
-            TIMER_A0->CCR[0] += (int)(angle / 180 * MIDDLE);   //framework, not correct
+            TIMER_A0->CCR[0] += (int)(angle / 180 * ONE_MS) + ONE_MS;
             outputting = 1;
             angle_set = 0;
         }
