@@ -9,15 +9,15 @@
 // are logic 0. This gives the EEPROM a bus address of 0x50.
 //
 //
-// /|\ /|\
-// MSP432P401 10k 10k 24LC256 EEPROM
-// master | | Slave
-// ----------------- | | -----------------
+//                 /|\  /|\
+// MSP432P401      10k  10k  24LC256 EEPROM
+//    master        |    |       Slave
+// -----------------|    | -----------------
 // | P1.6/UCB0SDA|<-|----|->|SDA (5) |
-// | | | | |
-// | | | | |
+// |             |  |       |        |
+// |             |  |       |        |
 // | P1.7/UCB0SCL|<-|------>|SCL (6) |
-// | | | |
+// |             |          |        |
 //
 // Paul Hummel
 // Cal Poly
