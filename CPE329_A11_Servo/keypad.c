@@ -27,10 +27,10 @@ int check_key_pressed(){
     if(rows == 8) rows = 4;
     key = rows * 3 + col - 2;
     //key = (rows * col+1) + ((rows)*(3-col+1));
-    if(key == 11) key = 0;
-    key += '0';
-    if(key == 0x3A) key = '*';
-    if(key == 0x3C) key = '#';
+    if(key == 47) key = 0;
+    //key += '0';
+    //if(key == 46) key = '*';
+    //if(key == 48) key = '#';
     return key;
 }
 
